@@ -42,32 +42,48 @@ export const MEASURE = 'mx-auto w-full max-w-[80ch]';
  * Fixed order, every destination on every page. The current page stays in the
  * list and is marked, rather than being dropped — a nav whose items move around
  * as you browse is the thing that makes an app feel unconsidered.
+ *
+ * This is also the ONLY place a page is named. The header title is looked up
+ * from here by pathname rather than passed in, because when pages named
+ * themselves they drifted: the chat called itself "Foundry Ops Copilot" while
+ * its nav item said "Ask", and the schedule called itself "Week Schedule" while
+ * its nav item said "Schedule". One list, one name, no way to disagree.
  */
 const NAV = [
-    { href: '/', label: 'Ask' },
+    { href: '/', label: 'Copilot' },
     { href: '/dashboard', label: 'Plant status' },
     { href: '/schedule', label: 'Schedule' },
     { href: '/data', label: 'Source data' },
 ] as const;
 
 export function AppHeader({
-    title,
     meta,
     children,
 }: {
-    title: string;
     /** Small monospace note beside the title — dataset date, week, row count. */
     meta?: string;
     /** Optional second row inside the header (the chat's source bus). */
     children?: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const page = NAV.find((item) => item.href === pathname)?.label;
 
     return (
         <header className="rule-brand bg-shell-900/80 backdrop-blur">
             <div className={`${SHELL} flex items-baseline gap-3 py-3`}>
                 <span className="h-2 w-2 shrink-0 rounded-full bg-brand-500" />
-                <h1 className="sign shrink-0 text-[0.92rem] text-ink-100">{title}</h1>
+                {/* The product name stays constant and quiet; the page name is
+                    the bright part. Same two-part title on every surface, so
+                    where you are is always read in the same place. */}
+                <h1 className="sign flex shrink-0 items-baseline gap-1.5 text-[0.92rem]">
+                    <span className="text-ink-500">Foundry Ops</span>
+                    {page && (
+                        <>
+                            <span className="text-ink-600">·</span>
+                            <span className="text-ink-100">{page}</span>
+                        </>
+                    )}
+                </h1>
                 {/* Says what this is before anyone has to look for it. Lives in
                     the shared header on purpose: the empty state is easy to
                     miss and easy to skip past, and a visitor arriving on the

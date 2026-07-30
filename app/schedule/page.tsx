@@ -154,10 +154,7 @@ export default function SchedulePage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <AppHeader
-                title="Week Schedule"
-                meta={data ? `week of ${data.week_start}` : 'loading…'}
-            />
+            <AppHeader meta={data ? `week of ${data.week_start}` : 'loading…'} />
 
             <Page>
                 {/* Filters in one row above the grid. */}

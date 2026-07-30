@@ -423,14 +423,19 @@ export default function Chat() {
     // both: the intro stays on screen with the question ready to edit or send.
     // The ref guard keeps a re-render from clobbering what the visitor types.
     useEffect(() => {
+        if (prefilled.current) return;
+        prefilled.current = true;
+
         const q = searchParams.get('q');
-        if (q && !prefilled.current) {
-            prefilled.current = true;
-            setInput(q);
-            const el = inputRef.current;
-            el?.focus();
-            el?.setSelectionRange(q.length, q.length);
-        }
+        if (q) setInput(q);
+
+        // Land the caret in the composer so the thing to do is unambiguous.
+        // Desktop only: on a phone this throws the keyboard over the intro
+        // before anyone has read what the app is.
+        if (!window.matchMedia('(min-width: 40rem)').matches) return;
+        const el = inputRef.current;
+        el?.focus();
+        if (q) el?.setSelectionRange(q.length, q.length);
     }, [searchParams]);
 
     const empty = turns.length === 0;
@@ -438,7 +443,7 @@ export default function Chat() {
     return (
         <div className="flex min-h-full flex-1 flex-col">
             {/* --- header ---------------------------------------------------- */}
-            <AppHeader title="Foundry Ops Copilot">
+            <AppHeader>
                 <SourceBus active={activeSources} live={busy} />
             </AppHeader>
 
@@ -549,31 +554,40 @@ export default function Chat() {
                 >
                     {/* Same measure as the transcript, so the prompt sits directly
                         under the conversation rather than drifting wide of it. */}
-                    <div className={`${MEASURE} flex items-center gap-2`}>
-                        <span className="font-mono text-[0.85rem] text-brand-500">&gt;</span>
-                        <input
-                            ref={inputRef}
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            disabled={busy}
-                            placeholder={busy ? 'working…' : 'Ask about jobs, scrap, heats, capacity, or commitments'}
-                            className="min-w-0 flex-1 bg-transparent text-[0.92rem] text-ink-100 placeholder:text-ink-600 focus:outline-none disabled:opacity-50"
-                        />
-                        {quota && quota.remaining <= 5 && (
-                            <span
-                                className="shrink-0 font-mono text-[0.64rem]"
-                                style={{ color: quota.remaining === 0 ? 'var(--color-danger)' : 'var(--color-warn)' }}
-                                title={`This demo allows ${quota.limit} questions per visitor per day.`}
-                            >
-                                {quota.remaining === 0
-                                    ? 'daily limit reached'
-                                    : `${quota.remaining} left today`}
-                            </span>
-                        )}
+                    {/* Asking is the whole point of the app, so the field is
+                        built like one: a real bordered input on a raised ground
+                        that brightens to brand on focus, next to a filled
+                        button. Borderless text on a translucent bar read as a
+                        status strip — you had to go looking for the one control
+                        that matters. brand-600 is the fill role in the token
+                        set; nothing else on these pages claims it. */}
+                    <div className={`${MEASURE} flex items-stretch gap-2`}>
+                        <div className="flex min-w-0 flex-1 items-center gap-2 border border-shell-600 bg-shell-850 px-3 py-2.5 transition-colors focus-within:border-brand-500">
+                            <span className="shrink-0 font-mono text-[0.9rem] text-brand-400">&gt;</span>
+                            <input
+                                ref={inputRef}
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                disabled={busy}
+                                placeholder={busy ? 'working…' : 'Ask about jobs, scrap, heats, capacity, or commitments'}
+                                className="min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink-100 placeholder:text-ink-500 focus:outline-none disabled:opacity-50"
+                            />
+                            {quota && quota.remaining <= 5 && (
+                                <span
+                                    className="shrink-0 font-mono text-[0.64rem]"
+                                    style={{ color: quota.remaining === 0 ? 'var(--color-danger)' : 'var(--color-warn)' }}
+                                    title={`This demo allows ${quota.limit} questions per visitor per day.`}
+                                >
+                                    {quota.remaining === 0
+                                        ? 'daily limit reached'
+                                        : `${quota.remaining} left today`}
+                                </span>
+                            )}
+                        </div>
                         <button
                             type="submit"
                             disabled={busy || !input.trim() || quota?.remaining === 0}
-                            className="sign shrink-0 border border-shell-600 px-3 py-1 text-[0.64rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
+                            className="sign shrink-0 bg-brand-600 px-5 text-[0.68rem] text-ink-100 transition-colors enabled:hover:bg-brand-500 disabled:opacity-30"
                         >
                             Ask
                         </button>

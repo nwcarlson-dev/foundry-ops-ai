@@ -90,7 +90,7 @@ export default function DashboardPage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <AppHeader title="Plant Status" meta={data ? `as of ${data.as_of}` : 'loading…'} />
+            <AppHeader meta={data ? `as of ${data.as_of}` : 'loading…'} />
 
             <Page>
                 {error && <ErrorBox>{error}</ErrorBox>}

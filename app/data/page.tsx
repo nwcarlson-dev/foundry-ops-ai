@@ -129,7 +129,7 @@ export default function DataPage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <AppHeader title="Source Data" meta={`${relations?.length ?? 0} relations · four systems`} />
+            <AppHeader meta={`${relations?.length ?? 0} relations · four systems`} />
 
             <Page>
                 <p className="mb-5 max-w-[68ch] text-[0.86rem] leading-relaxed text-ink-300">
