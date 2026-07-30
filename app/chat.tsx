@@ -339,12 +339,28 @@ export default function Chat() {
                     <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
                         LeClaire Manufacturing · Bettendorf, IA
                     </span>
-                    <Link
-                        href="/dashboard"
-                        className="ml-auto sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400"
-                    >
-                        Plant status →
-                    </Link>
+                    <nav className="ml-auto flex items-center gap-4">
+                        <a
+                            href="https://github.com/nwcarlson-dev/foundry-ops-ai"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-melt-400"
+                        >
+                            Source
+                        </a>
+                        <Link
+                            href="/schedule"
+                            className="hidden sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400 sm:inline"
+                        >
+                            Schedule
+                        </Link>
+                        <Link
+                            href="/dashboard"
+                            className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400"
+                        >
+                            Plant status →
+                        </Link>
+                    </nav>
                 </div>
                 <div className="mx-auto max-w-4xl px-5 pb-3">
                     <SourceBus active={activeSources} live={busy} />

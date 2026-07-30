@@ -110,9 +110,18 @@ export default function DashboardPage() {
                     <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
                         {data ? `as of ${data.as_of}` : 'loading…'}
                     </span>
-                    <Link href="/" className="ml-auto sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
-                        Ask a question →
-                    </Link>
+                    <nav className="ml-auto flex items-center gap-4">
+                        <a href="https://github.com/nwcarlson-dev/foundry-ops-ai" target="_blank" rel="noreferrer"
+                           className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-melt-400">
+                            Source
+                        </a>
+                        <Link href="/schedule" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
+                            Schedule
+                        </Link>
+                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
+                            Ask a question →
+                        </Link>
+                    </nav>
                 </div>
             </header>
 
