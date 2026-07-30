@@ -149,7 +149,7 @@ export const getJobDetail = defineTool({
         const totalScrap = (scrap as Array<Record<string, unknown>>)
             .reduce((sum, r) => sum + (toNum(r.qty) ?? 0), 0);
 
-        notes.push('Labor and material rates are nominal, not LeClaire actuals (see docs/DATA.md).');
+        notes.push('Labor and material rates are nominal, not plant actuals (see docs/DATA.md).');
         if (ops.some((o) => o.not_started)) {
             notes.push('Operations with zero actual hours have not reached the floor yet.');
         }

@@ -326,7 +326,7 @@ export const jobCostSummary = defineTool({
             };
         });
 
-        notes.push('Labour and material rates are nominal, not LeClaire actuals (see docs/DATA.md).');
+        notes.push('Labour and material rates are nominal, not plant actuals (see docs/DATA.md).');
         if (list.length === 0) notes.push('No jobs match those filters in that window.');
 
         return {
