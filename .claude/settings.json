@@ -1,7 +1,47 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx --yes create-next-app@latest . --typescript --app --tailwind --eslint --use-npm --no-src-dir --no-turbopack --import-alias \"@/*\" --yes)"
+      "Bash(npx --yes create-next-app@latest . --typescript --app --tailwind --eslint --use-npm --no-src-dir --no-turbopack --import-alias \"@/*\" --yes)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('deps:'\\); console.log\\(JSON.stringify\\(p.dependencies,null,2\\)\\); console.log\\('devDeps:'\\); console.log\\(JSON.stringify\\(p.devDependencies,null,2\\)\\);\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"typecheck exit=$?\")",
+      "Bash(node -e ' *)",
+      "Bash(npm test *)",
+      "Bash(curl -s -o /dev/null -w \"status.anthropic.com -> HTTP %{http_code}\\\\n\" --max-time 15 https://status.anthropic.com)",
+      "Bash(curl -s --max-time 15 -o /dev/null -w \"api.anthropic.com -> HTTP %{http_code}\\\\n\" https://api.anthropic.com/v1/models)",
+      "Bash(find /Users/nathanamacbookair/Documents/GitHub/foundry-ops-ai/node_modules/next/dist/docs '\\(' -iname *route* -o -iname *upgrad* -o -iname *version-16* '\\)')",
+      "Bash(grep -nE '^#{2,3} |Breaking|breaking|removed|Removed|deprecat' /Users/nathanamacbookair/Documents/GitHub/foundry-ops-ai/node_modules/next/dist/docs/01-app/02-guides/upgrading/version-16.md)",
+      "Bash(grep -n -i stream __TRACKED_VAR__/01-app/03-api-reference/03-file-conventions/route.md)",
+      "Bash(perl -0pi -e \"s|from './lib/domain'|from '../lib/domain'|\" scripts/generate.ts)",
+      "Bash(mv scripts/lib/domain.ts lib/domain.ts)",
+      "Bash(npx tsx *)",
+      "Bash(npm run *)",
+      "Read(//tmp/claude-501/-Users-nathanamacbookair-Documents-GitHub-foundry-ops-ai/ddf40804-2f1f-4de8-a6cf-636e18fefdaf/scratchpad/**)",
+      "Bash(break)",
+      "Bash(curl -s -o /dev/null -w \"GET / -> %{http_code}\\\\n\" --max-time 30 http://localhost:3000/)",
+      "Bash(curl -s --max-time 20 -X POST http://localhost:3000/api/chat -H 'Content-Type: application/json' -d '{\"messages\":[]}')",
+      "Bash(curl -s --max-time 20 -X POST http://localhost:3000/api/chat -H 'Content-Type: application/json' -d '{\"messages\":[{\"role\":\"assistant\",\"content\":\"hi\"}]}')",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/@modelcontextprotocol/sdk/package.json'\\).version\\)\")",
+      "Read(//private/tmp/**)",
+      "Bash(npx --prefix /Users/nathanamacbookair/Documents/GitHub/foundry-ops-ai tsx /Users/nathanamacbookair/Documents/GitHub/foundry-ops-ai/mcp/server.ts)",
+      "Bash(node /private/tmp/claude-501/bundled-skills/2.1.220/c5ce1d5e46df7747a7429017282d1846/dataviz/scripts/validate_palette.js '#4d94d1,#f08c3a,#3fb87f,#b07de0' --mode dark --surface '#131619')",
+      "Bash(curl -s -o /dev/null -w \"GET /dashboard -> %{http_code}\\\\n\" --max-time 30 http://localhost:3000/dashboard)",
+      "Bash(curl -s --max-time 60 \"http://localhost:3000/api/dashboard?narrate=0\")",
+      "Bash(time curl -s --max-time 90 \"http://localhost:3000/api/dashboard\")",
+      "Bash(time curl -s -o /dev/null --max-time 60 \"http://localhost:3000/api/dashboard\")",
+      "Bash(curl -s -o /dev/null -w \"GET /?q=... -> %{http_code}\\\\n\" --max-time 30 \"http://localhost:3000/?q=Which%20open%20jobs%20are%20at%20risk%3F\")",
+      "Bash(perl -0pi -e 's/    test\\\\\\(.grouping actually avoids changeovers where families repeat., async \\\\\\(\\\\\\) => \\\\{\\\\n        const s = await buildSchedule\\\\\\(\\\\\\);\\\\n        const avoided = s\\\\.work_centres\\\\.reduce\\\\\\(\\\\\\(sum, w\\\\\\) => sum \\\\+ w\\\\.changeovers_avoided, 0\\\\\\);\\\\n        \\\\/\\\\/ Not a hard requirement of correctness, but if this is always zero the\\\\n        \\\\/\\\\/ family-grouping rule is dead code and the scheduler is plain EDD\\\\.\\\\n        assert\\\\.ok\\\\\\(avoided >= 0\\\\\\);\\\\n        assert\\\\.ok\\\\\\(\\\\n            s\\\\.work_centres\\\\.every\\\\\\(\\\\\\(w\\\\\\) => w\\\\.changeovers <= w\\\\.segments\\\\.length\\\\\\),\\\\n            .more changeovers than segments is impossible.,\\\\n        \\\\\\);\\\\n    \\\\}\\\\\\);/    test\\(\"setup-family grouping demonstrably saves setups\", async \\(\\) => {\\\\n        const s = await buildSchedule\\(\\);\\\\n        const saved = s.work_centres.reduce\\(\\(sum, w\\) => sum + w.setups_saved, 0\\);\\\\n        const paid  = s.work_centres.reduce\\(\\(sum, w\\) => sum + w.changeovers, 0\\);\\\\n\\\\n        \\\\/\\\\/ If this were zero, every consecutive pair would be a family change and\\\\n        \\\\/\\\\/ the grouping rule would be doing nothing worth claiming.\\\\n        assert.ok\\(saved > 0,\\\\n            `expected some setups to be skipped by family grouping \\(paid \\\\${paid}, saved \\\\${saved}\\)`\\);\\\\n\\\\n        \\\\/\\\\/ Per centre, setups paid + setups skipped must equal the transitions\\\\n        \\\\/\\\\/ between operations. Anything else means the counters are lying.\\\\n        for \\(const w of s.work_centres\\) {\\\\n            const opCount = new Set\\(w.segments.map\\(\\(x\\) => `\\\\${x.job_num}:\\\\${x.oper_seq}`\\)\\).size;\\\\n            if \\(opCount === 0\\) continue;\\\\n            assert.equal\\(w.changeovers + w.setups_saved, opCount - 1,\\\\n                `\\\\${w.wc_code}: \\\\${w.changeovers} paid + \\\\${w.setups_saved} saved != \\\\${opCount - 1} transitions`\\);\\\\n        }\\\\n    }\\);/' tests/scheduler.test.ts)",
+      "Bash(perl -0pi -e 's/onClick=\\\\{\\\\\\(\\\\\\) => setDept\\\\\\(d\\\\\\)\\\\}/onClick={\\(\\) => selectDept\\(d\\)}/' app/schedule/page.tsx)",
+      "Bash(curl -s --max-time 90 \"http://localhost:3000/api/schedule\")",
+      "Bash(perl -0pi -e \"s/    \\\\| \\\\{ t: 'done'; turns: number; usage: UsageTotals \\\\}/    | { t: 'done'; turns: number; usage: UsageTotals; remaining?: number; limit?: number }/\" lib/agent/loop.ts)",
+      "Bash(perl -0pi -e \"s|    console.log\\\\\\('applying db/xref.sql'\\\\\\);\\\\n    await client.query\\\\\\(readFileSync\\\\\\(join\\\\\\(root, 'db', 'xref.sql'\\\\\\), 'utf8'\\\\\\)\\\\\\);|    console.log\\('applying db/xref.sql'\\);\\\\n    await client.query\\(readFileSync\\(join\\(root, 'db', 'xref.sql'\\), 'utf8'\\)\\);\\\\n    // Usage counters live in their own schema and are NOT dropped: the spend\\\\n    // ceiling must survive a reseed.\\\\n    console.log\\('applying db/limits.sql'\\);\\\\n    await client.query\\(readFileSync\\(join\\(root, 'db', 'limits.sql'\\), 'utf8'\\)\\);|\" scripts/generate.ts)",
+      "Bash(python3 -)",
+      "Bash(npx vercel *)",
+      "Bash(gh auth *)",
+      "Bash(git check-ignore *)",
+      "Bash(awk '{print $2}')",
+      "Bash(grep -v '/$')",
+      "Bash(git commit *)"
     ]
   }
 }

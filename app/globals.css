@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Foundry Ops Copilot — design tokens.
+ *
+ * The visual language is a plant control room, not a chat app: graphite and
+ * tool steel, with molten-aluminum amber reserved for the one thing that
+ * actually matters on screen. Each of the four source systems carries its own
+ * colour throughout, because provenance is the product.
+ */
+
+@theme {
+    /* Shell — cast iron through tool steel */
+    --color-shell-900: #0d0f11;
+    --color-shell-850: #131619;
+    --color-shell-800: #181b1f;
+    --color-shell-700: #21262b;
+    --color-shell-600: #2d343a;
+    --color-shell-500: #3d464e;
+
+    /* Type */
+    --color-ink-100: #eef1f3;
+    --color-ink-300: #b9c1c8;
+    --color-ink-500: #7c878f;
+    --color-ink-600: #5c666d;
+
+    /* Molten aluminium — the pour glow. Used sparingly, on purpose. */
+    --color-melt-400: #ffa94d;
+    --color-melt-500: #ff8c1a;
+    --color-melt-600: #e8590c;
+
+    /*
+     * Source-system identity. Every number on screen traces to one of these.
+     *
+     * Validated with the dataviz palette checker against the dark chart surface
+     * (#131619): lightness band, chroma floor, CVD separation, normal-vision
+     * floor, and contrast all pass — worst adjacent pair ΔE 10.9 under deutan.
+     * The obvious hues (a bright green, a warm orange) failed CVD separation
+     * against each other, hence teal and burnt orange.
+     */
+    --color-src-epicor: #4d94d1;
+    --color-src-thrive: #c1591d;
+    --color-src-ignition: #149180;
+    --color-src-monday: #8d63bf;
+    --color-src-xref: #8a949c;
+
+    /* Chart surface — what the palette above was validated against. */
+    --color-chart-surface: #131619;
+
+    /* Status. Reserved: never reused as a categorical series colour. */
+    --color-good: #3d9970;
+    --color-warn: #e8b339;
+    --color-danger: #e5484d;
+
+    --font-display: var(--font-barlow), ui-sans-serif, sans-serif;
+    --font-sans: var(--font-plex-sans), ui-sans-serif, sans-serif;
+    --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+    background: var(--color-shell-900);
+    color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background: var(--color-shell-900);
+    color: var(--color-ink-100);
+    font-family: var(--font-sans);
+    /*
+     * Faint diagonal mill texture plus a top pour-glow. Both are very low
+     * opacity — atmosphere, not decoration you notice.
+     */
+    background-image:
+        radial-gradient(
+            120rem 34rem at 50% -14rem,
+            rgba(255, 140, 26, 0.09),
+            transparent 70%
+        ),
+        repeating-linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.014) 0px,
+            rgba(255, 255, 255, 0.014) 1px,
+            transparent 1px,
+            transparent 7px
+        );
+    background-attachment: fixed;
+}
+
+/* Signage type: condensed, tracked out, like a stencilled plant sign. */
+.sign {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-weight: 600;
+}
+
+/* Hairline rules that read as machined edges rather than borders. */
+.rule-t { border-top: 1px solid var(--color-shell-700); }
+.rule-b { border-bottom: 1px solid var(--color-shell-700); }
+
+::selection {
+    background: var(--color-melt-600);
+    color: #fff;
+}
+
+/* Scrollbars, so the dark shell stays intact. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-shell-600) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: var(--color-shell-600);
+    border: 3px solid var(--color-shell-900);
+    border-radius: 6px;
+}
+
+/* --- motion ------------------------------------------------------------- */
+
+@keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 0.32s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+/* A source lamp firing on the bus strip. */
+@keyframes lamp {
+    0%   { box-shadow: 0 0 0 0 currentColor; opacity: 0.55; }
+    45%  { box-shadow: 0 0 12px 1px currentColor; opacity: 1; }
+    100% { box-shadow: 0 0 0 0 currentColor; opacity: 0.55; }
+}
+.animate-lamp { animation: lamp 1.15s ease-in-out infinite; }
+
+/* Working indicator: a slow sweep, like a machine cycling. */
+@keyframes sweep {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(320%); }
+}
+.animate-sweep { animation: sweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.15; }
+}
+.animate-blink { animation: blink 1.1s steps(1, end) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-rise, .animate-lamp, .animate-sweep, .animate-blink {
+        animation: none;
+    }
+}
+
+/* --- prose ---------------------------------------------------------------
+ * The model returns markdown-ish prose with tables. These styles are applied
+ * to the rendered answer.
+ */
+.answer { line-height: 1.68; }
+.answer > * + * { margin-top: 0.9em; }
+.answer strong { color: var(--color-ink-100); font-weight: 600; }
+.answer code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: var(--color-melt-400);
+    background: rgba(255, 140, 26, 0.08);
+    padding: 0.1em 0.36em;
+    border-radius: 3px;
+}
+.answer ul { padding-left: 1.1rem; }
+.answer li { margin-top: 0.34em; list-style: none; position: relative; }
+.answer li::before {
+    content: "";
+    position: absolute;
+    left: -0.95rem;
+    top: 0.62em;
+    width: 5px;
+    height: 1px;
+    background: var(--color-melt-600);
+}
+.answer table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+.answer th {
+    text-align: left;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-size: 0.74rem;
+    color: var(--color-ink-500);
+    padding: 0.4rem 0.8rem 0.4rem 0;
+    border-bottom: 1px solid var(--color-shell-600);
+    white-space: nowrap;
+}
+.answer td {
+    padding: 0.42rem 0.8rem 0.42rem 0;
+    border-bottom: 1px solid var(--color-shell-800);
+    vertical-align: top;
+}
+.answer h1, .answer h2, .answer h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.82rem;
+    color: var(--color-ink-300);
+    margin-top: 1.5em;
 }
