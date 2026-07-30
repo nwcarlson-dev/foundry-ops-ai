@@ -54,6 +54,7 @@ const NAV = [
     { href: '/dashboard', label: 'Plant status' },
     { href: '/schedule', label: 'Schedule' },
     { href: '/data', label: 'Source data' },
+    { href: '/tools', label: 'Tools' },
 ] as const;
 
 export function AppHeader({

@@ -14,6 +14,7 @@
  */
 import { useEffect, useState } from 'react';
 import { AppHeader, Page, Panel, ErrorBox, PageNote, Loading } from '../shell';
+import { SOURCE_COLOR } from '../sources';
 
 interface Relation {
     schema: string;
@@ -31,14 +32,6 @@ interface Page {
     columns: { name: string; type: string }[];
     rows: Record<string, unknown>[];
 }
-
-const SOURCE_COLOR: Record<string, string> = {
-    epicor: 'var(--color-src-epicor)',
-    thrive: 'var(--color-src-thrive)',
-    ignition: 'var(--color-src-ignition)',
-    monday: 'var(--color-src-monday)',
-    xref: 'var(--color-src-xref)',
-};
 
 /** What each schema is, in the words its own vendor would use. */
 const SCHEMA_NOTE: Record<string, { label: string; keyed: string }> = {

@@ -5,6 +5,12 @@
 **→ [foundry-ops-ai.vercel.app](https://foundry-ops-ai.vercel.app)** — live, no signup. Click
 the first suggested question.
 
+Or skip the UI and give the plant to your own agent — the same twelve tools, over MCP:
+
+```bash
+claude mcp add --transport http foundry-ops https://foundry-ops-ai.vercel.app/api/mcp
+```
+
 Epicor knows job numbers. Thrive knows heat numbers and its own pattern codes.
 The Ignition historian knows tag paths and timestamps and nothing else. The
 monday.com board knows whatever a human typed into a text field. None of them
@@ -55,11 +61,11 @@ under-reports.
 
 | | |
 |---|---|
-| **Ask** | Chat over a Claude tool-use loop. Every tool call renders as a chip showing which systems it read, and the source bus across the top lights up as the copilot reaches into each one. |
+| **Copilot** | Chat over a Claude tool-use loop. Every tool call renders as a chip showing which systems it read, and the source bus across the top lights up as the copilot reaches into each one. |
 | **Source data** | All 23 relations across the four schemas, browsable. The receipt: if you suspect a number was invented, read the table it came from. Read-only and allowlisted — the relation name is checked against `information_schema` before it reaches SQL. |
 | **Plant status** | Anomaly dashboard. Detection is deterministic SQL; the model writes one sentence per finding. Every card deep-links back into chat with the investigating question loaded. |
 | **Week schedule** | Finite-capacity scheduler — earliest due date, setup-family grouping, capacity discounted by real downtime. What didn't fit is reported with the arithmetic. |
-| **MCP** | The same twelve tools over stdio. Point Claude Desktop at it — see [docs/MCP.md](docs/MCP.md). |
+| **Tools** | All twelve tools with their schemas and source systems — and the one command that connects your own MCP client to this deployment. No clone, no credentials. |
 
 ## Architecture
 
@@ -72,16 +78,25 @@ under-reports.
          ──────  xref: 3 bridges + unmatched view  ──────
                             │
               lib/tools/  ·  12 typed, read-only, parameterised SQL
-              /             │              \
-       app/api/chat    mcp/server.ts    lib/anomalies.ts
-       Claude loop     stdio MCP        lib/scheduler.ts
-            │               │            deterministic
-         Ask UI      Claude Desktop     Dashboard · Schedule
+           /          |            |             \
+   app/api/chat  mcp/server.ts  app/api/mcp   lib/anomalies.ts
+   Claude loop   stdio MCP      HTTP MCP      lib/scheduler.ts
+        │             │             │          deterministic
+    Copilot UI   Claude Desktop  your client  Dashboard · Schedule
 ```
 
-**One tool layer, three consumers.** The MCP server is not a reimplementation —
-it imports the same `TOOLS` registry the web chat uses. That is the "unified AI
-layer" claim demonstrated rather than asserted.
+**One tool layer, four consumers.** Neither MCP server is a reimplementation —
+both call `registerFoundryTools` in [`lib/mcp.ts`](lib/mcp.ts) over the same
+`TOOLS` registry the web chat uses. That is the "unified AI layer" claim
+demonstrated rather than asserted.
+
+The HTTP transport is the part you can check without taking any of this on
+trust: point your own client at the running deployment and the twelve tools are
+there.
+
+```bash
+claude mcp add --transport http foundry-ops https://foundry-ops-ai.vercel.app/api/mcp
+```
 
 ## Two design decisions worth defending
 
@@ -122,7 +137,7 @@ cp .env.example .env.local        # add DATABASE_URL and ANTHROPIC_API_KEY
 
 npm run seed                      # ~76k rows from a fixed seed, reproducible
 npm run verify                    # 37 assertions: every planted signal detectable
-npm test                          # 42 assertions: tools, MCP protocol, scheduler
+npm test                          # 48 assertions: tools, both MCP transports, scheduler
 npm run dev
 
 npm run ask -- "which open jobs are at risk and why?"   # same loop, no browser
@@ -164,7 +179,7 @@ rather than presenting a text box that suddenly errors.
 | The posting asks for | Where it is |
 |---|---|
 | Claude API — prompt engineering, tool use, agentic workflows | [`lib/agent/`](lib/agent/) — streaming tool-use loop, cached system prompt, refusal handling |
-| MCP servers | [`mcp/server.ts`](mcp/server.ts) + protocol integration tests |
+| MCP servers | [`lib/mcp.ts`](lib/mcp.ts) on two transports — [`mcp/server.ts`](mcp/server.ts) stdio and [`app/api/mcp`](app/api/mcp/route.ts) streamable HTTP, both live and both under protocol tests. Connect your own client to the deployment. |
 | SQL against real production databases | [`lib/tools/`](lib/tools/) — 12 parameterised, read-only tools over Epicor-shaped schemas |
 | Connecting existing systems into a unified AI layer | [`db/xref.sql`](db/xref.sql) — the three bridges and the unmatched view |
 | AI-assisted scheduling from job cost, capacity, and machine data | [`lib/scheduler.ts`](lib/scheduler.ts) |

@@ -14,19 +14,12 @@ import Link from 'next/link';
 import type { Dashboard, Finding, Severity } from '@/lib/anomalies';
 import { ScrapTrend, WorkCenterLoad, Reconciliation } from './charts';
 import { AppHeader, Page, Panel, ErrorBox, StatTiles, PageNote, Loading } from '../shell';
+import { SOURCE_COLOR } from '../sources';
 
 const SEVERITY_STYLE: Record<Severity, { color: string; label: string }> = {
     critical: { color: 'var(--color-danger)', label: 'Critical' },
     warning: { color: 'var(--color-warn)', label: 'Warning' },
     watch: { color: 'var(--color-src-xref)', label: 'Watch' },
-};
-
-const SOURCE_COLOR: Record<string, string> = {
-    epicor: 'var(--color-src-epicor)',
-    thrive: 'var(--color-src-thrive)',
-    ignition: 'var(--color-src-ignition)',
-    monday: 'var(--color-src-monday)',
-    xref: 'var(--color-src-xref)',
 };
 
 function FindingCard({ finding }: { finding: Finding }) {

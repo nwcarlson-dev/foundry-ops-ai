@@ -1,24 +1,59 @@
 # Point Claude at the plant
 
-The same twelve tools the web chat uses are exposed as an **MCP server** over
-stdio. It is not a reimplementation — [`mcp/server.ts`](../mcp/server.ts) imports
-the identical `TOOLS` registry from [`lib/tools/`](../lib/tools/) and wraps it in
-a different transport.
+The same twelve tools the web chat uses are exposed over **MCP**, on two
+transports. Neither is a reimplementation: both call `registerFoundryTools` in
+[`lib/mcp.ts`](../lib/mcp.ts) over the identical `TOOLS` registry from
+[`lib/tools/`](../lib/tools/).
 
-That is the argument the project is making, in one file: build the integration
-layer once, typed and allowlisted, and every surface gets it. The web chat, the
-MCP server, and the test suite all call the same functions.
+That is the argument the project is making: build the integration layer once,
+typed and allowlisted, and every surface gets it. The web chat, both MCP
+transports, and the test suite all call the same functions.
 
 ```
               lib/tools/  (12 typed, read-only, parameterised SQL)
-                    |
-        +-----------+-----------+
-        |                       |
-  app/api/chat            mcp/server.ts
-  (Claude tool loop)      (stdio, any MCP client)
+                              |
+        +-----------------+---+-------------+-----------------+
+        |                 |                 |                 |
+  app/api/chat      mcp/server.ts     app/api/mcp          tests/
+  (Claude loop)     (stdio)           (streamable HTTP)    (42 assertions)
 ```
 
-## Setup
+## Connect to the live deployment
+
+**No clone, no credentials.** The hosted endpoint serves the same twelve tools
+from the deployed instance:
+
+```bash
+claude mcp add --transport http foundry-ops https://foundry-ops-ai.vercel.app/api/mcp
+```
+
+Claude Desktop, in `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "foundry-ops": {
+      "type": "http",
+      "url": "https://foundry-ops-ai.vercel.app/api/mcp"
+    }
+  }
+}
+```
+
+Then ask it something that needs more than one system — *"what is driving scrap
+on the 4471 bracket?"* — and watch it call `scrap_by_reason`, then
+`heat_history_for_job`, then `machine_signal_for_job` across three schemas that
+share no keys.
+
+The endpoint is stateless: every Vercel invocation is an isolated function, so
+there is no session to resume, and every tool is an independent read. It is
+rate-limited per client and metered separately from the web chat's daily
+question cap. Opening it in a browser returns a short JSON description rather
+than a protocol error.
+
+## Run it yourself over stdio
+
+Use this to point a client at **your own** database rather than the demo's.
 
 Prerequisite: a working `.env.local` with `DATABASE_URL`, and a seeded database
 (`npm run seed`). The server reads `.env.local` relative to its own location, so

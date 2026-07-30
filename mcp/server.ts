@@ -19,7 +19,8 @@ import { config as loadEnv } from 'dotenv';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { TOOLS, runTool } from '../lib/tools/index';
+import { TOOLS } from '../lib/tools/index';
+import { registerFoundryTools } from '../lib/mcp';
 import { DATASET_TODAY } from '../lib/dataset';
 
 // Resolve env relative to THIS FILE, not the working directory. An MCP client
@@ -42,55 +43,8 @@ async function main() {
         version: '0.1.0',
     });
 
-    for (const tool of TOOLS) {
-        server.registerTool(
-            tool.name,
-            {
-                title: tool.name,
-                // Tell the client which systems this reads from. An MCP client
-                // has none of the web UI's chips, so provenance has to travel
-                // in the description and in the payload.
-                description:
-                    `${tool.description}\n\n` +
-                    `Reads from: ${tool.sources.join(', ')}. Read-only. ` +
-                    `Plant date is ${DATASET_TODAY}.`,
-                inputSchema: tool.schema,
-                annotations: {
-                    readOnlyHint: true,
-                    destructiveHint: false,
-                    idempotentHint: true,
-                    openWorldHint: false,
-                },
-            },
-            async (args: unknown) => {
-                const result = await runTool(tool.name, args);
-
-                if (result.error) {
-                    return {
-                        isError: true,
-                        content: [{ type: 'text' as const, text: result.error }],
-                    };
-                }
-
-                return {
-                    content: [
-                        {
-                            type: 'text' as const,
-                            text: JSON.stringify(
-                                {
-                                    sources: result.sources,
-                                    data: result.data,
-                                    ...(result.notes?.length ? { notes: result.notes } : {}),
-                                },
-                                null,
-                                2,
-                            ),
-                        },
-                    ],
-                };
-            },
-        );
-    }
+    // Shared with the HTTP transport in app/api/mcp/route.ts — see lib/mcp.ts.
+    registerFoundryTools(server);
 
     const transport = new StdioServerTransport();
     await server.connect(transport);

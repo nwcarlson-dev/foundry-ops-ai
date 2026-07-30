@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { DATASET_TODAY } from '@/lib/dataset';
 import { Markdown } from './markdown';
 import { AppHeader, SHELL, MEASURE, ErrorBox } from './shell';
+import { SOURCE_COLOR } from './sources';
 
 // ---------------------------------------------------------------------------
 
@@ -25,14 +26,6 @@ const SOURCES = [
     { id: 'ignition', label: 'Ignition', sub: 'historian', color: 'var(--color-src-ignition)' },
     { id: 'monday', label: 'monday', sub: 'commitments', color: 'var(--color-src-monday)' },
 ] as const;
-
-const SOURCE_COLOR: Record<string, string> = {
-    epicor: 'var(--color-src-epicor)',
-    thrive: 'var(--color-src-thrive)',
-    ignition: 'var(--color-src-ignition)',
-    monday: 'var(--color-src-monday)',
-    xref: 'var(--color-src-xref)',
-};
 
 const SUGGESTIONS = [
     {
