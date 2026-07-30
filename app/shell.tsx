@@ -178,9 +178,12 @@ export function StatTiles({
     items: { label: string; value: string | number }[];
 }) {
     return (
+        // auto-fit rather than a fixed column count: the row reflows on its own
+        // as the viewport narrows — four tiles become two on a phone — without
+        // needing a breakpoint per possible tile count.
         <div
             className="grid gap-px bg-shell-700"
-            style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(9rem, 1fr))' }}
         >
             {items.map((s) => (
                 <div key={s.label} className="bg-shell-850 px-4 py-3">
