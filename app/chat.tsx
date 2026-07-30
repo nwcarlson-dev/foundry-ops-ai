@@ -336,9 +336,6 @@ export default function Chat() {
                 <div className="mx-auto flex max-w-4xl items-baseline gap-3 px-5 py-3">
                     <span className="h-2 w-2 rounded-full bg-brand-500" />
                     <h1 className="sign text-[0.92rem] text-ink-100">Foundry Ops Copilot</h1>
-                    <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
-                        four systems that never met · one question
-                    </span>
                     <nav className="ml-auto flex items-center gap-4">
                         <a
                             href="https://github.com/nwcarlson-dev/foundry-ops-ai"
