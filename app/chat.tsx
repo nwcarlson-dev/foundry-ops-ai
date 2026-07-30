@@ -337,14 +337,12 @@ export default function Chat() {
                     <span className="h-2 w-2 rounded-full bg-brand-500" />
                     <h1 className="sign text-[0.92rem] text-ink-100">Foundry Ops Copilot</h1>
                     <nav className="ml-auto flex items-center gap-4">
-                        <a
-                            href="https://github.com/nwcarlson-dev/foundry-ops-ai"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-brand-300"
+                        <Link
+                            href="/data"
+                            className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300"
                         >
-                            Source
-                        </a>
+                            Source data
+                        </Link>
                         <Link
                             href="/schedule"
                             className="hidden sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300 sm:inline"

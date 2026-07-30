@@ -56,6 +56,7 @@ under-reports.
 | | |
 |---|---|
 | **Ask** | Chat over a Claude tool-use loop. Every tool call renders as a chip showing which systems it read, and the source bus across the top lights up as the copilot reaches into each one. |
+| **Source data** | All 23 relations across the four schemas, browsable. The receipt: if you suspect a number was invented, read the table it came from. Read-only and allowlisted — the relation name is checked against `information_schema` before it reaches SQL. |
 | **Plant status** | Anomaly dashboard. Detection is deterministic SQL; the model writes one sentence per finding. Every card deep-links back into chat with the investigating question loaded. |
 | **Week schedule** | Finite-capacity scheduler — earliest due date, setup-family grouping, capacity discounted by real downtime. What didn't fit is reported with the arithmetic. |
 | **MCP** | The same twelve tools over stdio. Point Claude Desktop at it — see [docs/MCP.md](docs/MCP.md). |

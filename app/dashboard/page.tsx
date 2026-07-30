@@ -111,10 +111,9 @@ export default function DashboardPage() {
                         {data ? `as of ${data.as_of}` : 'loading…'}
                     </span>
                     <nav className="ml-auto flex items-center gap-4">
-                        <a href="https://github.com/nwcarlson-dev/foundry-ops-ai" target="_blank" rel="noreferrer"
-                           className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-brand-300">
-                            Source
-                        </a>
+                        <Link href="/data" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
+                            Source data
+                        </Link>
                         <Link href="/schedule" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
                             Schedule
                         </Link>
