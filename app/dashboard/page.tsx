@@ -78,7 +78,7 @@ function FindingCard({ finding }: { finding: Finding }) {
 
             <Link
                 href={`/?q=${encodeURIComponent(finding.ask)}`}
-                className="mt-2.5 inline-block sign text-[0.6rem] text-ink-500 transition-colors hover:text-melt-400"
+                className="mt-2.5 inline-block sign text-[0.6rem] text-ink-500 transition-colors hover:text-brand-300"
             >
                 Ask about this →
             </Link>
@@ -103,22 +103,22 @@ export default function DashboardPage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <header className="rule-b bg-shell-900/80 backdrop-blur">
+            <header className="rule-brand bg-shell-900/80 backdrop-blur">
                 <div className="mx-auto flex max-w-5xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-melt-500" />
+                    <span className="h-2 w-2 rounded-full bg-brand-500" />
                     <h1 className="sign text-[0.92rem] text-ink-100">Plant Status</h1>
                     <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
                         {data ? `as of ${data.as_of}` : 'loading…'}
                     </span>
                     <nav className="ml-auto flex items-center gap-4">
                         <a href="https://github.com/nwcarlson-dev/foundry-ops-ai" target="_blank" rel="noreferrer"
-                           className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-melt-400">
+                           className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-brand-300">
                             Source
                         </a>
-                        <Link href="/schedule" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
+                        <Link href="/schedule" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
                             Schedule
                         </Link>
-                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
+                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
                             Ask a question →
                         </Link>
                     </nav>

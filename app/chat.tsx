@@ -149,7 +149,7 @@ function ToolChipRow({ call }: { call: ToolCall }) {
 
                 {!call.done ? (
                     <span className="relative ml-auto h-[2px] w-10 shrink-0 overflow-hidden rounded bg-shell-700">
-                        <span className="absolute inset-y-0 left-0 w-1/3 rounded bg-melt-500 animate-sweep" />
+                        <span className="absolute inset-y-0 left-0 w-1/3 rounded bg-brand-500 animate-sweep" />
                     </span>
                 ) : (
                     <>
@@ -183,7 +183,7 @@ function ToolChipRow({ call }: { call: ToolCall }) {
                             {params.map(([k, v]) => (
                                 <div key={k} className="contents">
                                     <dt className="font-mono text-[0.7rem] text-ink-600">{k}</dt>
-                                    <dd className="font-mono text-[0.7rem] text-melt-400 break-all">
+                                    <dd className="font-mono text-[0.7rem] text-brand-300 break-all">
                                         {typeof v === 'string' ? v : JSON.stringify(v)}
                                     </dd>
                                 </div>
@@ -332,31 +332,31 @@ export default function Chat() {
     return (
         <div className="flex min-h-full flex-1 flex-col">
             {/* --- header ---------------------------------------------------- */}
-            <header className="rule-b bg-shell-900/80 backdrop-blur">
+            <header className="rule-brand bg-shell-900/80 backdrop-blur">
                 <div className="mx-auto flex max-w-4xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-melt-500" />
+                    <span className="h-2 w-2 rounded-full bg-brand-500" />
                     <h1 className="sign text-[0.92rem] text-ink-100">Foundry Ops Copilot</h1>
                     <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
-                        LeClaire Manufacturing · Bettendorf, IA
+                        four systems that never met · one question
                     </span>
                     <nav className="ml-auto flex items-center gap-4">
                         <a
                             href="https://github.com/nwcarlson-dev/foundry-ops-ai"
                             target="_blank"
                             rel="noreferrer"
-                            className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-melt-400"
+                            className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-brand-300"
                         >
                             Source
                         </a>
                         <Link
                             href="/schedule"
-                            className="hidden sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400 sm:inline"
+                            className="hidden sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300 sm:inline"
                         >
                             Schedule
                         </Link>
                         <Link
                             href="/dashboard"
-                            className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400"
+                            className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300"
                         >
                             Plant status →
                         </Link>
@@ -392,7 +392,7 @@ export default function Chat() {
                                     className="group flex w-full items-center gap-3 border-l-2 bg-shell-850/50 px-3.5 py-2.5 text-left transition-all hover:bg-shell-800"
                                     style={{
                                         borderColor: s.flagship
-                                            ? 'var(--color-melt-500)'
+                                            ? 'var(--color-brand-500)'
                                             : 'var(--color-shell-600)',
                                     }}
                                 >
@@ -412,7 +412,7 @@ export default function Chat() {
                             turn.role === 'user' ? (
                                 <div key={i} className="animate-rise">
                                     <div className="sign mb-1.5 text-[0.6rem] text-ink-600">Asked</div>
-                                    <div className="border-l-2 border-melt-600 pl-3 text-[0.95rem] text-ink-100">
+                                    <div className="border-l-2 border-brand-500 pl-3 text-[0.95rem] text-ink-100">
                                         {turn.text}
                                     </div>
                                 </div>
@@ -472,7 +472,7 @@ export default function Chat() {
                     onSubmit={(e) => { e.preventDefault(); send(input); }}
                     className="mx-auto flex max-w-4xl items-center gap-2 px-5 py-3"
                 >
-                    <span className="font-mono text-[0.85rem] text-melt-600">&gt;</span>
+                    <span className="font-mono text-[0.85rem] text-brand-500">&gt;</span>
                     <input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -494,7 +494,7 @@ export default function Chat() {
                     <button
                         type="submit"
                         disabled={busy || !input.trim() || quota?.remaining === 0}
-                        className="sign shrink-0 border border-shell-600 px-3 py-1 text-[0.64rem] text-ink-300 transition-colors enabled:hover:border-melt-600 enabled:hover:text-melt-400 disabled:opacity-30"
+                        className="sign shrink-0 border border-shell-600 px-3 py-1 text-[0.64rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
                     >
                         Ask
                     </button>

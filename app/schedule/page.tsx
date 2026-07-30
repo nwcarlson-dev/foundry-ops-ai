@@ -72,22 +72,22 @@ export default function SchedulePage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <header className="rule-b bg-shell-900/80 backdrop-blur">
+            <header className="rule-brand bg-shell-900/80 backdrop-blur">
                 <div className="mx-auto flex max-w-6xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-melt-500" />
+                    <span className="h-2 w-2 rounded-full bg-brand-500" />
                     <h1 className="sign text-[0.92rem] text-ink-100">Week Schedule</h1>
                     <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
                         {data ? `week of ${data.week_start}` : 'loading…'}
                     </span>
                     <nav className="ml-auto flex items-center gap-4">
                         <a href="https://github.com/nwcarlson-dev/foundry-ops-ai" target="_blank" rel="noreferrer"
-                           className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-melt-400">
+                           className="sign text-[0.64rem] text-ink-600 transition-colors hover:text-brand-300">
                             Source
                         </a>
-                        <Link href="/dashboard" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
+                        <Link href="/dashboard" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
                             Plant status
                         </Link>
-                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-melt-400">
+                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
                             Ask →
                         </Link>
                     </nav>
@@ -104,8 +104,8 @@ export default function SchedulePage() {
                             onClick={() => selectDept(d)}
                             className="sign border px-2.5 py-1 text-[0.6rem] transition-colors"
                             style={{
-                                borderColor: dept === d ? 'var(--color-melt-600)' : 'var(--color-shell-700)',
-                                color: dept === d ? 'var(--color-melt-400)' : 'var(--color-ink-500)',
+                                borderColor: dept === d ? 'var(--color-brand-500)' : 'var(--color-shell-700)',
+                                color: dept === d ? 'var(--color-brand-300)' : 'var(--color-ink-500)',
                             }}
                         >
                             {d || 'All'}

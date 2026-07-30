@@ -1,30 +1,43 @@
 @import "tailwindcss";
 
 /*
- * Foundry Ops Copilot — design tokens.
+ * Foundry Ops Copilot — design tokens. See docs/DESIGN.md for the reasoning.
  *
- * The visual language is a plant control room, not a chat app: graphite and
- * tool steel, with molten-aluminum amber reserved for the one thing that
- * actually matters on screen. Each of the four source systems carries its own
- * colour throughout, because provenance is the product.
+ * The visual language is a plant control room, not a chat app: cool graphite
+ * and tool steel. Blue is chrome and action, red is exception only, amber is
+ * the warning tier between them. Each of the four source systems carries its
+ * own colour throughout, because provenance is the product.
  */
 
 @theme {
-    /* Shell — cast iron through tool steel */
-    --color-shell-900: #0d0f11;
-    --color-shell-850: #131619;
-    --color-shell-800: #181b1f;
-    --color-shell-700: #21262b;
-    --color-shell-600: #2d343a;
-    --color-shell-500: #3d464e;
+    /* Shell — cast iron through tool steel, shifted a few degrees cool so the
+       blue accents read as native rather than applied. */
+    --color-shell-900: #0b0e12;
+    --color-shell-850: #10141a;
+    --color-shell-800: #151a21;
+    --color-shell-700: #1e242d;
+    --color-shell-600: #2a323d;
+    --color-shell-500: #3a4451;
 
-    /* Type */
-    --color-ink-100: #eef1f3;
-    --color-ink-300: #b9c1c8;
-    --color-ink-500: #7c878f;
-    --color-ink-600: #5c666d;
+    /* Type. Ratios against shell-900. ink-600 is decorative only — 3.2:1
+       never carries a label. */
+    --color-ink-100: #eef2f6;
+    --color-ink-300: #b8c2ce;
+    --color-ink-500: #7b8794;
+    --color-ink-600: #5a6472;
 
-    /* Molten aluminium — the pour glow. Used sparingly, on purpose. */
+    /*
+     * Brand blue. Split into two roles because one hex cannot do both: light
+     * steps carry type and icons, deep steps are surfaces and fills.
+     * brand-500 is the identity anchor and the colour of the header mark.
+     */
+    --color-brand-300: #7fb4e8;  /* 8.8:1 — links, active nav, icons */
+    --color-brand-400: #4d93dd;  /* 6.0:1 — hover, secondary blue type */
+    --color-brand-500: #1f6fc4;  /* 3.8:1 — headings, focus rings, borders */
+    --color-brand-600: #17539b;  /* fills only; white on it clears 6.8:1 */
+    --color-brand-800: #0f2b4d;  /* tinted panel grounds; ink-100 on it 12.7:1 */
+
+    /* Molten aluminium. Demoted from hero accent to the warning tier. */
     --color-melt-400: #ffa94d;
     --color-melt-500: #ff8c1a;
     --color-melt-600: #e8590c;
@@ -33,10 +46,13 @@
      * Source-system identity. Every number on screen traces to one of these.
      *
      * Validated with the dataviz palette checker against the dark chart surface
-     * (#131619): lightness band, chroma floor, CVD separation, normal-vision
+     * (#10141a): lightness band, chroma floor, CVD separation, normal-vision
      * floor, and contrast all pass — worst adjacent pair ΔE 10.9 under deutan.
      * The obvious hues (a bright green, a warm orange) failed CVD separation
      * against each other, hence teal and burnt orange.
+     *
+     * Epicor's blue and brand blue are close in hue, so they are kept apart by
+     * role: brand blue is never a data colour, Epicor blue is never chrome.
      */
     --color-src-epicor: #4d94d1;
     --color-src-thrive: #c1591d;
@@ -45,12 +61,13 @@
     --color-src-xref: #8a949c;
 
     /* Chart surface — what the palette above was validated against. */
-    --color-chart-surface: #131619;
+    --color-chart-surface: #10141a;
 
     /* Status. Reserved: never reused as a categorical series colour. */
     --color-good: #3d9970;
     --color-warn: #e8b339;
-    --color-danger: #e5484d;
+    --color-danger: #f2554a;      /* 5.7:1 — type and icons */
+    --color-danger-fill: #d9382c; /* badges and bars; white on it is 4.6:1 */
 
     --font-display: var(--font-barlow), ui-sans-serif, sans-serif;
     --font-sans: var(--font-plex-sans), ui-sans-serif, sans-serif;
@@ -73,7 +90,7 @@ body {
     background-image:
         radial-gradient(
             120rem 34rem at 50% -14rem,
-            rgba(255, 140, 26, 0.09),
+            rgba(31, 111, 196, 0.10),
             transparent 70%
         ),
         repeating-linear-gradient(
@@ -98,8 +115,15 @@ body {
 .rule-t { border-top: 1px solid var(--color-shell-700); }
 .rule-b { border-bottom: 1px solid var(--color-shell-700); }
 
+/*
+ * The one place red appears without meaning "something is wrong": a hairline
+ * of brand trim under the app header. Non-interactive and decorative, so it
+ * cannot collide with red-as-alarm anywhere else on screen.
+ */
+.rule-brand { border-bottom: 1px solid var(--color-danger-fill); }
+
 ::selection {
-    background: var(--color-melt-600);
+    background: var(--color-brand-600);
     color: #fff;
 }
 
@@ -161,8 +185,8 @@ body {
 .answer code {
     font-family: var(--font-mono);
     font-size: 0.875em;
-    color: var(--color-melt-400);
-    background: rgba(255, 140, 26, 0.08);
+    color: var(--color-brand-300);
+    background: rgba(31, 111, 196, 0.10);
     padding: 0.1em 0.36em;
     border-radius: 3px;
 }
@@ -175,7 +199,7 @@ body {
     top: 0.62em;
     width: 5px;
     height: 1px;
-    background: var(--color-melt-600);
+    background: var(--color-brand-500);
 }
 .answer table {
     width: 100%;

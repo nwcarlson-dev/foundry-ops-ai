@@ -1,5 +1,11 @@
 # Color direction: LeClaire's brand, in the dark
 
+> **Status: applied.** Everything below is live in
+> [`app/globals.css`](../app/globals.css) and the three page components, with
+> one documented correction to the source-color table (see *Source colors*).
+> The company name is deliberately **not** printed anywhere in the UI — the
+> palette carries the recognition on its own, which is the point of the doc.
+
 The goal is recognition, not replication. Someone from LeClaire Manufacturing
 should open this and feel like it belongs to them within about a second — before
 they read a word — and then stop thinking about the colors entirely.
@@ -134,8 +140,22 @@ If they still muddle in practice, the fallback is to move Epicor to a cyan
 change — Epicor is the system of record and appears the most — so try the
 discipline rule first.
 
-The other three source colors are unaffected and stay: Thrive `#f08c3a`,
-Ignition `#3fb87f`, Monday `#b07de0`, xref `#8a949c`.
+The other three source colors are unaffected and stay: Thrive `#c1591d`,
+Ignition `#149180`, Monday `#8d63bf`, xref `#8a949c`.
+
+> **Corrected.** An earlier draft of this table listed Thrive `#f08c3a`,
+> Ignition `#3fb87f`, and Monday `#b07de0`. Those are the *pre-validation*
+> hues, and running them through the dataviz checker against the new shell
+> fails the lightness band — all three land above L 0.67 (0.734, 0.701, 0.680)
+> on a dark surface, which is what makes a dark UI look washed out. The values
+> above are what actually ships, and they pass all five checks on `#10141a`
+> with a worst adjacent pair of ΔE 10.9 under deuteranopia. Re-run before
+> changing any of them:
+>
+> ```
+> node scripts/validate_palette.js "#4d94d1,#c1591d,#149180,#8d63bf" \
+>   --mode dark --surface "#10141a"
+> ```
 
 ## Usage rules
 
