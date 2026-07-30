@@ -9,8 +9,8 @@
  * the model only wrote the prose.
  */
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import type { Schedule } from '@/lib/scheduler';
+import { AppHeader, Page, Panel, ErrorBox, StatTiles, Loading } from '../shell';
 
 const DEPTS = ['MELT', 'MOLD', 'CORE', 'CLEAN', 'HEAT_TREAT', 'MACHINE'] as const;
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -72,28 +72,12 @@ export default function SchedulePage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <header className="rule-brand bg-shell-900/80 backdrop-blur">
-                <div className="mx-auto flex max-w-6xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-brand-500" />
-                    <h1 className="sign text-[0.92rem] text-ink-100">Week Schedule</h1>
-                    <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
-                        {data ? `week of ${data.week_start}` : 'loading…'}
-                    </span>
-                    <nav className="ml-auto flex items-center gap-4">
-                        <Link href="/data" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Source data
-                        </Link>
-                        <Link href="/dashboard" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Plant status
-                        </Link>
-                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Ask →
-                        </Link>
-                    </nav>
-                </div>
-            </header>
+            <AppHeader
+                title="Week Schedule"
+                meta={data ? `week of ${data.week_start}` : 'loading…'}
+            />
 
-            <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6">
+            <Page>
                 {/* Filters in one row above the grid. */}
                 <div className="mb-5 flex flex-wrap items-center gap-1">
                     <span className="sign mr-2 text-[0.6rem] text-ink-600">Department</span>
@@ -112,45 +96,27 @@ export default function SchedulePage() {
                     ))}
                 </div>
 
-                {error && (
-                    <div className="border-l-2 px-3 py-2 text-[0.85rem]"
-                         style={{ borderColor: 'var(--color-danger)', background: 'rgba(229,72,77,0.07)', color: '#f0a3a5' }}>
-                        {error}
-                    </div>
-                )}
+                {error && <ErrorBox>{error}</ErrorBox>}
 
-                {loading && !error && (
-                    <div className="py-16 text-center font-mono text-[0.74rem] text-ink-600">
-                        sequencing<span className="animate-blink">_</span>
-                    </div>
-                )}
+                {loading && !error && <Loading verb="sequencing" />}
 
                 {data && !loading && (
                     <div className="space-y-5">
-                        <div className="grid grid-cols-2 gap-px bg-shell-700 sm:grid-cols-4">
-                            {[
+                        <StatTiles
+                            items={[
                                 { label: 'Scheduled', value: `${data.totals.hours_scheduled}h` },
                                 { label: 'Operations', value: data.totals.operations_scheduled },
                                 { label: "Didn't fit", value: `${data.totals.hours_unscheduled}h` },
                                 { label: 'Finish late', value: data.totals.late_operations },
-                            ].map((s) => (
-                                <div key={s.label} className="bg-shell-850 px-4 py-3">
-                                    <div className="font-display text-[1.6rem] leading-none text-ink-100 tabular-nums">
-                                        {s.value}
-                                    </div>
-                                    <div className="sign mt-1 text-[0.6rem] text-ink-600">{s.label}</div>
-                                </div>
-                            ))}
-                        </div>
+                            ]}
+                        />
 
                         {/* --- the grid ------------------------------------ */}
-                        <section className="border border-shell-700 bg-shell-850/60">
-                            <header className="rule-b px-4 py-2">
-                                <h2 className="sign text-[0.68rem] text-ink-300">
-                                    Deterministic sequence · earliest due date, family-grouped
-                                </h2>
-                            </header>
-
+                        <Panel
+                            title="Deterministic sequence"
+                            meta="earliest due date, family-grouped"
+                            flush
+                        >
                             <div className="overflow-x-auto p-4">
                                 <div className="min-w-[54rem]">
                                     <div className="mb-1 grid grid-cols-[7rem_repeat(5,1fr)] gap-1">
@@ -245,16 +211,15 @@ export default function SchedulePage() {
                                     <span className="font-mono text-[0.58rem] text-ink-600">⚙ = setup paid</span>
                                 </div>
                             )}
-                        </section>
+                        </Panel>
 
                         {data.unscheduled.length > 0 && (
-                            <section className="border border-shell-700 bg-shell-850/60">
-                                <header className="rule-b px-4 py-2">
-                                    <h2 className="sign text-[0.68rem]" style={{ color: 'var(--color-danger)' }}>
-                                        Did not fit — {data.totals.hours_unscheduled}h
-                                    </h2>
-                                </header>
-                                <div className="space-y-2 p-4">
+                            <Panel
+                                title="Did not fit"
+                                meta={`${data.totals.hours_unscheduled}h unscheduled`}
+                                tone="danger"
+                            >
+                                <div className="space-y-2">
                                     {data.unscheduled.map((u) => (
                                         <div key={`${u.job_num}-${u.oper_seq}`}
                                              className="border-l-2 pl-3"
@@ -267,27 +232,20 @@ export default function SchedulePage() {
                                         </div>
                                     ))}
                                 </div>
-                            </section>
+                            </Panel>
                         )}
 
                         {data.summary && (
-                            <section className="border border-shell-700 bg-shell-850/60">
-                                <header className="rule-b flex items-baseline justify-between px-4 py-2">
-                                    <h2 className="sign text-[0.68rem] text-ink-300">What this means</h2>
-                                    <span className="font-mono text-[0.6rem] text-ink-600">
-                                        written by the model · schedule was not
-                                    </span>
-                                </header>
-                                <div className="answer p-4 text-[0.88rem] text-ink-300">
+                            <Panel title="What this means" meta="written by the model · schedule was not">
+                                <div className="answer text-[0.88rem] text-ink-300">
                                     {data.summary.split('\n').filter(Boolean).map((p, i) => (
                                         <p key={i}>{p}</p>
                                     ))}
                                 </div>
-                            </section>
+                            </Panel>
                         )}
 
-                        <section className="border border-shell-700 bg-shell-850/40 px-4 py-3">
-                            <h2 className="sign mb-1.5 text-[0.6rem] text-ink-600">Assumptions</h2>
+                        <Panel title="Assumptions">
                             <ul className="space-y-1">
                                 {data.assumptions.map((a, i) => (
                                     <li key={i} className="font-mono text-[0.66rem] leading-relaxed text-ink-600">
@@ -295,10 +253,10 @@ export default function SchedulePage() {
                                     </li>
                                 ))}
                             </ul>
-                        </section>
+                        </Panel>
                     </div>
                 )}
-            </main>
+            </Page>
         </div>
     );
 }

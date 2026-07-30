@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Dashboard, Finding, Severity } from '@/lib/anomalies';
 import { ScrapTrend, WorkCenterLoad, Reconciliation } from './charts';
+import { AppHeader, Page, Panel, ErrorBox, StatTiles, PageNote, Loading } from '../shell';
 
 const SEVERITY_STYLE: Record<Severity, { color: string; label: string }> = {
     critical: { color: 'var(--color-danger)', label: 'Critical' },
@@ -27,20 +28,6 @@ const SOURCE_COLOR: Record<string, string> = {
     monday: 'var(--color-src-monday)',
     xref: 'var(--color-src-xref)',
 };
-
-function Panel({ title, meta, children }: {
-    title: string; meta?: string; children: React.ReactNode;
-}) {
-    return (
-        <section className="border border-shell-700 bg-shell-850/60">
-            <header className="flex items-baseline justify-between rule-b px-4 py-2">
-                <h2 className="sign text-[0.68rem] text-ink-300">{title}</h2>
-                {meta && <span className="font-mono text-[0.64rem] text-ink-600">{meta}</span>}
-            </header>
-            <div className="p-4">{children}</div>
-        </section>
-    );
-}
 
 function FindingCard({ finding }: { finding: Finding }) {
     const style = SEVERITY_STYLE[finding.severity];
@@ -103,59 +90,24 @@ export default function DashboardPage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <header className="rule-brand bg-shell-900/80 backdrop-blur">
-                <div className="mx-auto flex max-w-5xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-brand-500" />
-                    <h1 className="sign text-[0.92rem] text-ink-100">Plant Status</h1>
-                    <span className="hidden font-mono text-[0.68rem] text-ink-600 sm:inline">
-                        {data ? `as of ${data.as_of}` : 'loading…'}
-                    </span>
-                    <nav className="ml-auto flex items-center gap-4">
-                        <Link href="/data" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Source data
-                        </Link>
-                        <Link href="/schedule" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Schedule
-                        </Link>
-                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Ask a question →
-                        </Link>
-                    </nav>
-                </div>
-            </header>
+            <AppHeader title="Plant Status" meta={data ? `as of ${data.as_of}` : 'loading…'} />
 
-            <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-6">
-                {error && (
-                    <div className="border-l-2 px-3 py-2 text-[0.85rem]"
-                         style={{ borderColor: 'var(--color-danger)', background: 'rgba(229,72,77,0.07)', color: '#f0a3a5' }}>
-                        {error}
-                    </div>
-                )}
+            <Page>
+                {error && <ErrorBox>{error}</ErrorBox>}
 
-                {!data && !error && (
-                    <div className="py-16 text-center font-mono text-[0.74rem] text-ink-600">
-                        reading four systems<span className="animate-blink">_</span>
-                    </div>
-                )}
+                {!data && !error && <Loading verb="reading four systems" />}
 
                 {data && (
                     <div className="space-y-5">
                         {/* Headline counts. A stat tile, not a chart — three numbers
                             do not need axes. */}
-                        <div className="grid grid-cols-3 gap-px bg-shell-700">
-                            {[
+                        <StatTiles
+                            items={[
                                 { label: 'Open jobs', value: data.counts.open_jobs },
                                 { label: 'Findings', value: data.findings.length },
                                 { label: 'Unreconciled', value: data.counts.unmatched },
-                            ].map((s) => (
-                                <div key={s.label} className="bg-shell-850 px-4 py-3">
-                                    <div className="font-display text-[1.7rem] leading-none text-ink-100 tabular-nums">
-                                        {s.value}
-                                    </div>
-                                    <div className="sign mt-1 text-[0.6rem] text-ink-600">{s.label}</div>
-                                </div>
-                            ))}
-                        </div>
+                            ]}
+                        />
 
                         <Panel
                             title="What changed"
@@ -216,14 +168,14 @@ export default function DashboardPage() {
                             </Panel>
                         </div>
 
-                        <p className="font-mono text-[0.64rem] leading-relaxed text-ink-600">
+                        <PageNote>
                             Detection is deterministic SQL — z-scores against a rolling baseline, rate
                             comparisons, and persistence tests. The model writes only the italic line
                             under each finding, over numbers it did not produce.
-                        </p>
+                        </PageNote>
                     </div>
                 )}
-            </main>
+            </Page>
         </div>
     );
 }

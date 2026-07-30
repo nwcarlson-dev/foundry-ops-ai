@@ -12,8 +12,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { Markdown } from './markdown';
+import { AppHeader, SHELL, ErrorBox } from './shell';
 
 // ---------------------------------------------------------------------------
 
@@ -332,41 +332,15 @@ export default function Chat() {
     return (
         <div className="flex min-h-full flex-1 flex-col">
             {/* --- header ---------------------------------------------------- */}
-            <header className="rule-brand bg-shell-900/80 backdrop-blur">
-                <div className="mx-auto flex max-w-4xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-brand-500" />
-                    <h1 className="sign text-[0.92rem] text-ink-100">Foundry Ops Copilot</h1>
-                    <nav className="ml-auto flex items-center gap-4">
-                        <Link
-                            href="/data"
-                            className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300"
-                        >
-                            Source data
-                        </Link>
-                        <Link
-                            href="/schedule"
-                            className="hidden sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300 sm:inline"
-                        >
-                            Schedule
-                        </Link>
-                        <Link
-                            href="/dashboard"
-                            className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300"
-                        >
-                            Plant status →
-                        </Link>
-                    </nav>
-                </div>
-                <div className="mx-auto max-w-4xl px-5 pb-3">
-                    <SourceBus active={activeSources} live={busy} />
-                </div>
-            </header>
+            <AppHeader title="Foundry Ops Copilot">
+                <SourceBus active={activeSources} live={busy} />
+            </AppHeader>
 
             {/* --- transcript ------------------------------------------------ */}
-            <main className="mx-auto w-full max-w-4xl flex-1 px-5">
+            <main className={`${SHELL} flex-1`}>
                 {empty ? (
                     <div className="py-12 animate-rise">
-                        <p className="max-w-2xl text-[0.95rem] leading-relaxed text-ink-300">
+                        <p className="max-w-[68ch] text-[0.95rem] leading-relaxed text-ink-300">
                             Four plant systems.{' '}
                             <span className="text-ink-100">No shared keys.</span>{' '}
                             Epicor knows job numbers, Thrive knows heat numbers, the Ignition
@@ -432,15 +406,8 @@ export default function Chat() {
                                     )}
 
                                     {turn.error && (
-                                        <div
-                                            className="mt-2 border-l-2 px-3 py-2 text-[0.85rem]"
-                                            style={{
-                                                borderColor: 'var(--color-danger)',
-                                                background: 'rgba(229,72,77,0.07)',
-                                                color: '#f0a3a5',
-                                            }}
-                                        >
-                                            {turn.error}
+                                        <div className="mt-2">
+                                            <ErrorBox>{turn.error}</ErrorBox>
                                         </div>
                                     )}
 
@@ -465,7 +432,7 @@ export default function Chat() {
             <div className="sticky bottom-0 rule-t bg-shell-900/90 backdrop-blur">
                 <form
                     onSubmit={(e) => { e.preventDefault(); send(input); }}
-                    className="mx-auto flex max-w-4xl items-center gap-2 px-5 py-3"
+                    className={`${SHELL} flex items-center gap-2 py-3`}
                 >
                     <span className="font-mono text-[0.85rem] text-brand-500">&gt;</span>
                     <input

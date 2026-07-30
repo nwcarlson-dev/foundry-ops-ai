@@ -13,7 +13,7 @@
  * thing in the database that knows how the other four relate.
  */
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { AppHeader, Page, Panel, ErrorBox, PageNote, Loading } from '../shell';
 
 interface Relation {
     schema: string;
@@ -129,26 +129,10 @@ export default function DataPage() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
-            <header className="rule-brand bg-shell-900/80 backdrop-blur">
-                <div className="mx-auto flex max-w-6xl items-baseline gap-3 px-5 py-3">
-                    <span className="h-2 w-2 rounded-full bg-brand-500" />
-                    <h1 className="sign text-[0.92rem] text-ink-100">Source Data</h1>
-                    <nav className="ml-auto flex items-center gap-4">
-                        <Link href="/dashboard" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Plant status
-                        </Link>
-                        <Link href="/schedule" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Schedule
-                        </Link>
-                        <Link href="/" className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300">
-                            Ask a question →
-                        </Link>
-                    </nav>
-                </div>
-            </header>
+            <AppHeader title="Source Data" meta={`${relations?.length ?? 0} relations · four systems`} />
 
-            <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6">
-                <p className="mb-5 max-w-3xl text-[0.86rem] leading-relaxed text-ink-300">
+            <Page>
+                <p className="mb-5 max-w-[68ch] text-[0.86rem] leading-relaxed text-ink-300">
                     The four systems below share <strong className="text-ink-100">no keys</strong>.
                     Epicor knows <code className="font-mono text-brand-300">J-104829</code>.
                     Thrive knows <code className="font-mono text-brand-300">H26-0412</code> and its own
@@ -158,12 +142,7 @@ export default function DataPage() {
                     which is the only thing in the database that spans them.
                 </p>
 
-                {error && (
-                    <div className="mb-4 border-l-2 px-3 py-2 text-[0.85rem]"
-                         style={{ borderColor: 'var(--color-danger)', background: 'rgba(242,85,74,0.07)', color: '#f0a3a5' }}>
-                        {error}
-                    </div>
-                )}
+                {error && <div className="mb-4"><ErrorBox>{error}</ErrorBox></div>}
 
                 <div className="grid gap-5 lg:grid-cols-[15rem_1fr]">
                     {/* --- navigator ------------------------------------------- */}
@@ -218,28 +197,25 @@ export default function DataPage() {
                     </nav>
 
                     {/* --- table ----------------------------------------------- */}
-                    <section className="min-w-0 border border-shell-700 bg-shell-850/60">
-                        <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rule-b px-4 py-2">
-                            <h2 className="font-mono text-[0.78rem] text-ink-100">{selected}</h2>
-                            {page && (
-                                <>
-                                    <span className="sign text-[0.58rem] text-ink-600">
-                                        {page.kind}
-                                    </span>
-                                    <span className="ml-auto font-mono text-[0.64rem] text-ink-600 tabular-nums">
-                                        {page.total === 0
-                                            ? 'no rows'
-                                            : `${(page.offset + 1).toLocaleString()}–${Math.min(page.offset + page.limit, page.total).toLocaleString()} of ${page.total.toLocaleString()}`}
-                                    </span>
-                                </>
-                            )}
-                        </header>
-
-                        {loading && !page && (
-                            <p className="px-4 py-10 text-center font-mono text-[0.72rem] text-ink-600">
-                                loading<span className="animate-blink">_</span>
-                            </p>
-                        )}
+                    <Panel
+                        flush
+                        title={
+                            <span className="flex items-baseline gap-2">
+                                <span className="font-mono text-[0.78rem] text-ink-100">{selected}</span>
+                                {page && (
+                                    <span className="sign text-[0.58rem] text-ink-600">{page.kind}</span>
+                                )}
+                            </span>
+                        }
+                        meta={
+                            page
+                                ? page.total === 0
+                                    ? 'no rows'
+                                    : `${(page.offset + 1).toLocaleString()}–${Math.min(page.offset + page.limit, page.total).toLocaleString()} of ${page.total.toLocaleString()}`
+                                : undefined
+                        }
+                    >
+                        {loading && !page && <Loading verb="reading rows" />}
 
                         {page && (
                             <>
@@ -303,16 +279,16 @@ export default function DataPage() {
                                 )}
                             </>
                         )}
-                    </section>
+                    </Panel>
                 </div>
 
-                <p className="mt-5 font-mono text-[0.64rem] leading-relaxed text-ink-600">
+                <PageNote>
                     Every row is synthetic, generated from a fixed seed — no real plant data was
                     used or available. The structure, vocabulary, and failure modes are real; the
                     numbers are invented. Read-only: this endpoint can only SELECT, and only from
                     the relations listed here.
-                </p>
-            </main>
+                </PageNote>
+            </Page>
         </div>
     );
 }

@@ -179,7 +179,13 @@ body {
  * The model returns markdown-ish prose with tables. These styles are applied
  * to the rendered answer.
  */
-.answer { line-height: 1.68; }
+/*
+ * Line length is capped here rather than by narrowing the page container, so
+ * every surface can share one shell width without prose running to 1000px.
+ * Tables opt out — they need the room and scroll on their own.
+ */
+.answer { line-height: 1.68; max-width: 68ch; }
+.answer table { max-width: none; }
 .answer > * + * { margin-top: 0.9em; }
 .answer strong { color: var(--color-ink-100); font-weight: 600; }
 .answer code {
