@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Markdown } from './markdown';
-import { AppHeader, SHELL, ErrorBox } from './shell';
+import { AppHeader, SHELL, MEASURE, ErrorBox } from './shell';
 
 // ---------------------------------------------------------------------------
 
@@ -339,7 +339,7 @@ export default function Chat() {
             {/* --- transcript ------------------------------------------------ */}
             <main className={`${SHELL} flex-1`}>
                 {empty ? (
-                    <div className="py-12 animate-rise">
+                    <div className={`${MEASURE} py-12 animate-rise`}>
                         <p className="max-w-[68ch] text-[0.95rem] leading-relaxed text-ink-300">
                             Four plant systems.{' '}
                             <span className="text-ink-100">No shared keys.</span>{' '}
@@ -376,7 +376,7 @@ export default function Chat() {
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-7 py-7">
+                    <div className={`${MEASURE} space-y-7 py-7`}>
                         {turns.map((turn, i) =>
                             turn.role === 'user' ? (
                                 <div key={i} className="animate-rise">
@@ -432,34 +432,38 @@ export default function Chat() {
             <div className="sticky bottom-0 rule-t bg-shell-900/90 backdrop-blur">
                 <form
                     onSubmit={(e) => { e.preventDefault(); send(input); }}
-                    className={`${SHELL} flex items-center gap-2 py-3`}
+                    className={`${SHELL} py-3`}
                 >
-                    <span className="font-mono text-[0.85rem] text-brand-500">&gt;</span>
-                    <input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        disabled={busy}
-                        placeholder={busy ? 'working…' : 'Ask about jobs, scrap, heats, capacity, or commitments'}
-                        className="flex-1 bg-transparent text-[0.92rem] text-ink-100 placeholder:text-ink-600 focus:outline-none disabled:opacity-50"
-                    />
-                    {quota && quota.remaining <= 5 && (
-                        <span
-                            className="shrink-0 font-mono text-[0.64rem]"
-                            style={{ color: quota.remaining === 0 ? 'var(--color-danger)' : 'var(--color-warn)' }}
-                            title={`This demo allows ${quota.limit} questions per visitor per day.`}
+                    {/* Same measure as the transcript, so the prompt sits directly
+                        under the conversation rather than drifting wide of it. */}
+                    <div className={`${MEASURE} flex items-center gap-2`}>
+                        <span className="font-mono text-[0.85rem] text-brand-500">&gt;</span>
+                        <input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            disabled={busy}
+                            placeholder={busy ? 'working…' : 'Ask about jobs, scrap, heats, capacity, or commitments'}
+                            className="min-w-0 flex-1 bg-transparent text-[0.92rem] text-ink-100 placeholder:text-ink-600 focus:outline-none disabled:opacity-50"
+                        />
+                        {quota && quota.remaining <= 5 && (
+                            <span
+                                className="shrink-0 font-mono text-[0.64rem]"
+                                style={{ color: quota.remaining === 0 ? 'var(--color-danger)' : 'var(--color-warn)' }}
+                                title={`This demo allows ${quota.limit} questions per visitor per day.`}
+                            >
+                                {quota.remaining === 0
+                                    ? 'daily limit reached'
+                                    : `${quota.remaining} left today`}
+                            </span>
+                        )}
+                        <button
+                            type="submit"
+                            disabled={busy || !input.trim() || quota?.remaining === 0}
+                            className="sign shrink-0 border border-shell-600 px-3 py-1 text-[0.64rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
                         >
-                            {quota.remaining === 0
-                                ? 'daily limit reached'
-                                : `${quota.remaining} left today`}
-                        </span>
-                    )}
-                    <button
-                        type="submit"
-                        disabled={busy || !input.trim() || quota?.remaining === 0}
-                        className="sign shrink-0 border border-shell-600 px-3 py-1 text-[0.64rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
-                    >
-                        Ask
-                    </button>
+                            Ask
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

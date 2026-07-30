@@ -14,11 +14,29 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 /**
- * One container width for every page, header and body alike. Line length inside
- * prose is handled typographically (`.answer` caps at 68ch in globals.css)
- * rather than by narrowing the shell, so the chrome always lines up.
+ * The page gutter. Fluid width, responsive margins — the container tracks the
+ * viewport instead of snapping to a fixed column, and the gutter steps up with
+ * available space the way a normal layout does.
+ *
+ * Width is deliberately unbounded: a data table wants every pixel a wide screen
+ * offers. What must not run wide is *prose*, and that is solved where it belongs
+ * — `.answer` and the page intros cap at 68ch in globals.css, a typographic
+ * measure rather than a layout one.
+ *
+ * Every header, body, and composer uses this one constant, so the left and right
+ * gutters line up across all four pages at every breakpoint.
  */
-export const SHELL = 'mx-auto w-full max-w-5xl px-5';
+export const SHELL = 'mx-auto w-full px-4 sm:px-6 lg:px-8';
+
+/**
+ * The reading column, for content that is read rather than scanned — the
+ * conversation and the page intros. Dense surfaces (tables, the schedule grid,
+ * the dashboard) deliberately do not use this: they want the full viewport.
+ *
+ * This is a typographic measure sitting *inside* the shared gutter, not a second
+ * layout system. The gutters still line up across every page.
+ */
+export const MEASURE = 'mx-auto w-full max-w-[80ch]';
 
 /**
  * Fixed order, every destination on every page. The current page stays in the
