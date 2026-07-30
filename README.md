@@ -2,6 +2,9 @@
 
 **Four plant systems. No shared keys. Ask them one question.**
 
+**→ [foundry-ops-ai.vercel.app](https://foundry-ops-ai.vercel.app)** — live, no signup. Click
+the first suggested question.
+
 Epicor knows job numbers. Thrive knows heat numbers and its own pattern codes.
 The Ignition historian knows tag paths and timestamps and nothing else. The
 monday.com board knows whatever a human typed into a text field. None of them
