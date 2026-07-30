@@ -9,7 +9,7 @@
  * the model only wrote the prose.
  */
 import { useEffect, useState } from 'react';
-import type { Schedule } from '@/lib/scheduler';
+import type { Schedule, Segment } from '@/lib/scheduler';
 import { AppHeader, Page, Panel, ErrorBox, StatTiles, Loading } from '../shell';
 
 const DEPTS = ['MELT', 'MOLD', 'CORE', 'CLEAN', 'HEAT_TREAT', 'MACHINE'] as const;
@@ -23,11 +23,84 @@ function familyColor(family: string, order: string[]): string {
     return i >= 0 && i < FAMILY_COLORS.length ? FAMILY_COLORS[i] : '#4a545c';
 }
 
+/**
+ * One operation's time on a machine.
+ *
+ * Shared by the week grid and the phone day list. `roomy` is the phone: with no
+ * column pressure there is no reason to keep the type at the 9px the grid needs,
+ * and the part number and due date fit without a hover title nobody on a
+ * touchscreen can trigger.
+ */
+function SegmentBlock({
+    seg,
+    families,
+    roomy = false,
+}: {
+    seg: Segment;
+    families: string[];
+    roomy?: boolean;
+}) {
+    const color = familyColor(seg.family, families);
+
+    return (
+        <div
+            title={
+                `${seg.job_num} op ${seg.oper_seq} · ${seg.part_num}\n` +
+                `${seg.hours}h · due ${seg.due_date}` +
+                `${seg.changeover ? '\nsetup paid (family change)' : ''}` +
+                `${seg.late ? '\nfinishes after due date' : ''}`
+            }
+            className={`rounded-[2px] ${roomy ? 'px-2 py-1.5' : 'px-1.5 py-[3px]'}`}
+            style={{ background: `${color}22`, borderLeft: `2px solid ${color}` }}
+        >
+            <div className="flex items-baseline gap-1">
+                <span className={`font-mono text-ink-300 ${roomy ? 'text-[0.8rem]' : 'text-[0.62rem]'}`}>
+                    {seg.job_num.replace('J-', '')}
+                </span>
+                <span className={`font-mono ${roomy ? 'text-[0.72rem] text-ink-500' : 'text-[0.58rem] text-ink-600'}`}>
+                    /{seg.oper_seq}
+                </span>
+                {seg.changeover && (
+                    <span
+                        className={`font-mono ${roomy ? 'text-[0.72rem]' : 'text-[0.58rem]'}`}
+                        style={{ color: 'var(--color-warn)' }}
+                        title="setup paid"
+                    >
+                        ⚙
+                    </span>
+                )}
+                {seg.late && (
+                    <span
+                        className={`font-mono ${roomy ? 'text-[0.72rem]' : 'text-[0.58rem]'}`}
+                        style={{ color: 'var(--color-danger)' }}
+                    >
+                        late
+                    </span>
+                )}
+                <span
+                    className={`ml-auto font-mono tabular-nums ${
+                        roomy ? 'text-[0.72rem] text-ink-500' : 'text-[0.58rem] text-ink-600'
+                    }`}
+                >
+                    {seg.hours}h
+                </span>
+            </div>
+            {roomy && (
+                <div className="mt-0.5 font-mono text-[0.68rem] text-ink-500">
+                    {seg.part_num} · due {seg.due_date}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function SchedulePage() {
     const [data, setData] = useState<(Schedule & { summary: string | null }) | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [dept, setDept] = useState<string>('');
     const [loading, setLoading] = useState(true);
+    /** Phone only: the week grid does not fit, so it shows one weekday. */
+    const [day, setDay] = useState(0);
 
     // State transitions on filter change happen in the click handler below, not
     // here: setting state synchronously inside an effect triggers an extra
@@ -69,6 +142,15 @@ export default function SchedulePage() {
     const families = data
         ? [...new Set(data.work_centres.flatMap((w) => w.segments.map((s) => s.family)))].sort()
         : [];
+
+    // Phone view: only the work centres that actually run on the selected day.
+    // An empty machine is a row worth skipping when there is one column to read.
+    const dayCentres = (data?.work_centres ?? [])
+        .map((wc) => {
+            const segs = wc.segments.filter((s) => s.day === day);
+            return { wc, segs, used: segs.reduce((t, s) => t + s.hours, 0) };
+        })
+        .filter((r) => r.segs.length > 0);
 
     return (
         <div className="flex min-h-full flex-1 flex-col">
@@ -117,85 +199,141 @@ export default function SchedulePage() {
                             meta="earliest due date, family-grouped"
                             flush
                         >
-                            <div className="overflow-x-auto p-4">
-                                <div className="min-w-[54rem]">
-                                    <div className="mb-1 grid grid-cols-[7rem_repeat(5,1fr)] gap-1">
-                                        <div />
-                                        {DAY_NAMES.map((d, i) => (
-                                            <div key={d} className="sign text-[0.6rem] text-ink-600">
-                                                {d} <span className="text-ink-600/60">{data.days[i]?.slice(5)}</span>
+                            {/* Phone: one weekday at a time. The grid needs 54rem
+                                to stay legible, and dragging a week sideways on
+                                the screen a floor person actually carries is the
+                                worst version of this page. */}
+                            <div className="sm:hidden">
+                                <div className="rule-b flex gap-1 px-3 py-2">
+                                    {DAY_NAMES.map((d, i) => (
+                                        <button
+                                            key={d}
+                                            onClick={() => setDay(i)}
+                                            aria-pressed={day === i}
+                                            className="sign flex-1 border py-2 text-[0.62rem] transition-colors"
+                                            style={{
+                                                borderColor: day === i
+                                                    ? 'var(--color-brand-500)'
+                                                    : 'var(--color-shell-700)',
+                                                color: day === i
+                                                    ? 'var(--color-brand-300)'
+                                                    : 'var(--color-ink-500)',
+                                            }}
+                                        >
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-2 px-3 py-3">
+                                    <div className="sign text-[0.6rem] text-ink-500">
+                                        {DAY_NAMES[day]} {data.days[day]?.slice(5)}
+                                    </div>
+                                    {dayCentres.length === 0 ? (
+                                        <p className="font-mono text-[0.72rem] text-ink-500">
+                                            Nothing scheduled on {DAY_NAMES[day]}.
+                                        </p>
+                                    ) : (
+                                        dayCentres.map(({ wc, segs, used }) => (
+                                            <div
+                                                key={wc.wc_code}
+                                                className="border border-shell-700 bg-shell-900/60 p-2.5"
+                                            >
+                                                <div className="mb-2 flex items-baseline gap-2">
+                                                    <span className="font-mono text-[0.82rem] text-ink-300">
+                                                        {wc.wc_code}
+                                                    </span>
+                                                    {wc.downtime_discount_pct > 0 && (
+                                                        <span
+                                                            className="font-mono text-[0.68rem]"
+                                                            style={{ color: 'var(--color-danger)' }}
+                                                        >
+                                                            −{wc.downtime_discount_pct}%
+                                                        </span>
+                                                    )}
+                                                    <span className="ml-auto font-mono text-[0.72rem] text-ink-500 tabular-nums">
+                                                        {Math.round(used * 10) / 10}/{wc.effective_per_day}h
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {segs.map((s, i) => (
+                                                        <SegmentBlock
+                                                            key={`${s.job_num}-${s.oper_seq}-${i}`}
+                                                            seg={s}
+                                                            families={families}
+                                                            roomy
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Tablet and up: the week grid. It still scrolls on
+                                narrow screens, so the work-centre column is
+                                pinned and the right edge is faded — you always
+                                know which row you are reading, and that there
+                                is more week to the right. */}
+                            <div className="relative hidden sm:block">
+                                <div className="overflow-x-auto p-4">
+                                    <div className="min-w-[54rem]">
+                                        <div className="mb-1 grid grid-cols-[7rem_repeat(5,1fr)] gap-1">
+                                            <div className="sticky left-0 z-10 bg-shell-850" />
+                                            {DAY_NAMES.map((d, i) => (
+                                                <div key={d} className="sign text-[0.6rem] text-ink-600">
+                                                    {d} <span className="text-ink-600/60">{data.days[i]?.slice(5)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {data.work_centres.map((wc) => (
+                                            <div key={wc.wc_code}
+                                                 className="grid grid-cols-[7rem_repeat(5,1fr)] gap-1 border-t border-shell-800 py-1.5">
+                                                <div className="sticky left-0 z-10 bg-shell-850 pr-2">
+                                                    <div className="font-mono text-[0.72rem] text-ink-300">{wc.wc_code}</div>
+                                                    <div className="font-mono text-[0.6rem] text-ink-600">
+                                                        {wc.effective_per_day}h/day
+                                                        {wc.downtime_discount_pct > 0 && (
+                                                            <span style={{ color: 'var(--color-danger)' }}>
+                                                                {' '}−{wc.downtime_discount_pct}%
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {[0, 1, 2, 3, 4].map((d) => {
+                                                    const segs = wc.segments.filter((s) => s.day === d);
+                                                    const used = segs.reduce((t, s) => t + s.hours, 0);
+                                                    return (
+                                                        <div key={d} className="min-h-[2.6rem] space-y-[2px] bg-shell-900/60 p-1">
+                                                            {segs.map((s, i) => (
+                                                                <SegmentBlock
+                                                                    key={`${s.job_num}-${s.oper_seq}-${i}`}
+                                                                    seg={s}
+                                                                    families={families}
+                                                                />
+                                                            ))}
+                                                            {segs.length > 0 && (
+                                                                <div className="font-mono text-[0.55rem] text-ink-600 tabular-nums">
+                                                                    {Math.round(used * 10) / 10}/{wc.effective_per_day}h
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         ))}
                                     </div>
-
-                                    {data.work_centres.map((wc) => (
-                                        <div key={wc.wc_code}
-                                             className="grid grid-cols-[7rem_repeat(5,1fr)] gap-1 border-t border-shell-800 py-1.5">
-                                            <div className="pr-2">
-                                                <div className="font-mono text-[0.72rem] text-ink-300">{wc.wc_code}</div>
-                                                <div className="font-mono text-[0.6rem] text-ink-600">
-                                                    {wc.effective_per_day}h/day
-                                                    {wc.downtime_discount_pct > 0 && (
-                                                        <span style={{ color: 'var(--color-danger)' }}>
-                                                            {' '}−{wc.downtime_discount_pct}%
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {[0, 1, 2, 3, 4].map((day) => {
-                                                const segs = wc.segments.filter((s) => s.day === day);
-                                                const used = segs.reduce((t, s) => t + s.hours, 0);
-                                                return (
-                                                    <div key={day} className="min-h-[2.6rem] bg-shell-900/60 p-1">
-                                                        {segs.map((s, i) => (
-                                                            <div
-                                                                key={`${s.job_num}-${s.oper_seq}-${i}`}
-                                                                title={
-                                                                    `${s.job_num} op ${s.oper_seq} · ${s.part_num}\n` +
-                                                                    `${s.hours}h · due ${s.due_date}` +
-                                                                    `${s.changeover ? '\nsetup paid (family change)' : ''}` +
-                                                                    `${s.late ? '\nfinishes after due date' : ''}`
-                                                                }
-                                                                className="mb-[2px] rounded-[2px] px-1.5 py-[3px] last:mb-0"
-                                                                style={{
-                                                                    background: `${familyColor(s.family, families)}22`,
-                                                                    borderLeft: `2px solid ${familyColor(s.family, families)}`,
-                                                                }}
-                                                            >
-                                                                <div className="flex items-baseline gap-1">
-                                                                    <span className="font-mono text-[0.62rem] text-ink-300">
-                                                                        {s.job_num.replace('J-', '')}
-                                                                    </span>
-                                                                    <span className="font-mono text-[0.58rem] text-ink-600">
-                                                                        /{s.oper_seq}
-                                                                    </span>
-                                                                    {s.changeover && (
-                                                                        <span className="font-mono text-[0.58rem]"
-                                                                              style={{ color: 'var(--color-warn)' }}
-                                                                              title="setup paid">⚙</span>
-                                                                    )}
-                                                                    {s.late && (
-                                                                        <span className="font-mono text-[0.58rem]"
-                                                                              style={{ color: 'var(--color-danger)' }}>late</span>
-                                                                    )}
-                                                                    <span className="ml-auto font-mono text-[0.58rem] text-ink-600 tabular-nums">
-                                                                        {s.hours}h
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        {segs.length > 0 && (
-                                                            <div className="mt-[2px] font-mono text-[0.55rem] text-ink-600 tabular-nums">
-                                                                {Math.round(used * 10) / 10}/{wc.effective_per_day}h
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ))}
                                 </div>
+
+                                {/* Scroll affordance. Decorative, so it must not
+                                    eat pointer events on the cells beneath it. */}
+                                <div
+                                    aria-hidden
+                                    className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-shell-850 to-transparent lg:hidden"
+                                />
                             </div>
 
                             {families.length > 0 && (

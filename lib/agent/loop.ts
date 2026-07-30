@@ -27,6 +27,12 @@ export const MAX_TOKENS = 32_000;
 
 export type AgentEvent =
     | { t: 'text'; v: string }
+    /**
+     * What the model is doing before it has produced any answer text. High
+     * effort means most of a turn's wall clock is spent thinking, and without
+     * this the client has nothing to show for it — see the stream loop below.
+     */
+    | { t: 'status'; phase: 'thinking' | 'calling' | 'writing'; v?: string }
     | { t: 'tool_start'; id: string; name: string; sources: SourceSystem[]; input: unknown }
     | { t: 'tool_end'; id: string; name: string; ok: boolean; ms: number; summary: string }
     | { t: 'done'; turns: number; usage: UsageTotals; remaining?: number; limit?: number }
@@ -54,6 +60,42 @@ function summarize(result: { data: unknown; error?: string; notes?: string[] }):
         return 'ok';
     }
     return String(d);
+}
+
+/**
+ * Returns `history` with one ephemeral cache breakpoint on its final content
+ * block, so the *next* turn reads everything up to here — including this turn's
+ * tool results — from cache instead of re-tokenizing it.
+ *
+ * Without this only the system block is cached, and the tool-result JSON (up to
+ * MAX_ROWS rows per call) is re-sent uncached on every subsequent turn, which is
+ * the input cost that actually grows as a question needs more sources.
+ *
+ * Never mutates: `history` is reused across turns and has to stay clean, or the
+ * prefix would change shape between calls and stop matching the cache.
+ */
+function withTailBreakpoint(history: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
+    const last = history[history.length - 1];
+    if (!last) return history;
+
+    // The first user turn arrives from the route as a plain string. A breakpoint
+    // can only attach to a block, so normalize before marking it.
+    const blocks: Anthropic.ContentBlockParam[] =
+        typeof last.content === 'string'
+            ? [{ type: 'text', text: last.content }]
+            : [...last.content];
+
+    const tail = blocks[blocks.length - 1];
+    // Thinking blocks cannot carry cache_control. In practice the last message
+    // is always a user turn (text, or the tool_result batch), but a wrong guess
+    // here would be an API error rather than a slow request, so check.
+    if (!tail || tail.type === 'thinking' || tail.type === 'redacted_thinking') return history;
+
+    blocks[blocks.length - 1] = { ...tail, cache_control: { type: 'ephemeral' } };
+
+    const out = [...history];
+    out[out.length - 1] = { ...last, content: blocks };
+    return out;
 }
 
 export interface RunAgentOptions {
@@ -101,9 +143,10 @@ export async function runAgent({ messages, emit, signal }: RunAgentOptions): Pro
                     // reaches for tools noticeably less, which is the opposite
                     // of what a tool-driven copilot needs.
                     output_config: { effort: 'high' },
-                    // cache_control on the LAST system block caches the tool
+                    // Two breakpoints, covering the two things that cost input
+                    // tokens. This one on the LAST system block caches the tool
                     // definitions and the system prompt together, since tools
-                    // render ahead of system in the prompt.
+                    // render ahead of system in the prompt — a fixed prefix.
                     system: [
                         {
                             type: 'text',
@@ -112,14 +155,36 @@ export async function runAgent({ messages, emit, signal }: RunAgentOptions): Pro
                         },
                     ],
                     tools: toolDefs,
-                    messages: history,
+                    // ...and this one rolls along the conversation, which is the
+                    // part that actually grows. See withTailBreakpoint.
+                    messages: withTailBreakpoint(history),
                 },
                 { signal },
             );
 
+            // Forward more than the answer text. At high effort most of a turn
+            // is a thinking block, and a client that only sees text_delta has a
+            // blank screen for most of the wall clock. Two things fix that: the
+            // thinking itself, and the tool name at content_block_start —
+            // which lands well before finalMessage() resolves, so the chip
+            // appears when the model commits to the call rather than after the
+            // whole message has finished generating.
             for await (const event of stream) {
-                if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-                    emit({ t: 'text', v: event.delta.text });
+                if (event.type === 'content_block_start') {
+                    const block = event.content_block;
+                    if (block.type === 'thinking') {
+                        emit({ t: 'status', phase: 'thinking' });
+                    } else if (block.type === 'tool_use') {
+                        emit({ t: 'status', phase: 'calling', v: block.name });
+                    } else if (block.type === 'text') {
+                        emit({ t: 'status', phase: 'writing' });
+                    }
+                } else if (event.type === 'content_block_delta') {
+                    if (event.delta.type === 'text_delta') {
+                        emit({ t: 'text', v: event.delta.text });
+                    } else if (event.delta.type === 'thinking_delta') {
+                        emit({ t: 'status', phase: 'thinking', v: event.delta.thinking });
+                    }
                 }
             }
 

@@ -12,6 +12,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { DATASET_TODAY } from '@/lib/dataset';
 import { Markdown } from './markdown';
 import { AppHeader, SHELL, MEASURE, ErrorBox } from './shell';
 
@@ -74,10 +76,18 @@ interface ToolCall {
     summary: string;
 }
 
+/** What the model is doing before any answer text exists. */
+type Phase = 'thinking' | 'calling' | 'writing';
+
 interface Turn {
     role: 'user' | 'assistant';
     text: string;
     tools: ToolCall[];
+    /** Reasoning streamed before the answer. Cleared once the answer starts. */
+    thinking?: string;
+    phase?: Phase;
+    /** Tool name, when phase is 'calling'. */
+    phaseName?: string;
     error?: string;
     usage?: { cache_read_input_tokens: number; input_tokens: number; output_tokens: number };
 }
@@ -196,6 +206,61 @@ function ToolChipRow({ call }: { call: ToolCall }) {
     );
 }
 
+/**
+ * What fills the gap before the answer starts.
+ *
+ * At high effort most of a question's wall clock is the model reasoning, and the
+ * honest thing to do with that time is show it rather than hide it behind a
+ * spinner — the same argument the source bus and the tool chips already make.
+ * Collapsed it is a ticker of the latest reasoning; opened it is the full trace.
+ */
+function ThinkingStrip({ turn, seconds }: { turn: Turn; seconds: number }) {
+    const [open, setOpen] = useState(false);
+    const thinking = turn.thinking ?? '';
+
+    const label =
+        turn.phase === 'calling' ? `calling ${turn.phaseName ?? 'tool'}`
+        : turn.phase === 'writing' ? 'writing'
+        : 'thinking';
+
+    // The tail of the reasoning, whitespace collapsed, so the line reads as a
+    // ticker instead of re-wrapping the whole trace on every delta.
+    const latest = thinking.replace(/\s+/g, ' ').trim().slice(-140);
+
+    return (
+        <div className="animate-rise">
+            <button
+                onClick={() => setOpen((v) => !v)}
+                disabled={!thinking}
+                className="flex w-full items-baseline gap-2.5 text-left enabled:cursor-pointer"
+            >
+                <span className="sign shrink-0 text-[0.6rem] text-ink-500">
+                    {label}<span className="animate-blink">_</span>
+                </span>
+                <span className="min-w-0 flex-1 truncate font-mono text-[0.68rem] text-ink-500">
+                    {open ? '' : latest}
+                </span>
+                <span className="shrink-0 font-mono text-[0.64rem] text-ink-600 tabular-nums">
+                    {seconds}s
+                </span>
+                {thinking && (
+                    <span className="shrink-0 font-mono text-[0.7rem] text-ink-600">
+                        {open ? '−' : '+'}
+                    </span>
+                )}
+            </button>
+
+            {open && thinking && (
+                <div className="mt-1 ml-2 max-h-56 overflow-y-auto border-l border-shell-700 py-1 pl-3">
+                    <div className="whitespace-pre-wrap font-mono text-[0.68rem] leading-relaxed text-ink-500">
+                        {thinking}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ---------------------------------------------------------------------------
 
 export default function Chat() {
@@ -204,14 +269,28 @@ export default function Chat() {
     const [busy, setBusy] = useState(false);
     const [activeSources, setActiveSources] = useState<Set<string>>(new Set());
     const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
+    const [elapsed, setElapsed] = useState(0);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
     const abortRef = useRef<AbortController | null>(null);
     const searchParams = useSearchParams();
-    const autoSent = useRef(false);
+    const prefilled = useRef(false);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, [turns, busy]);
+
+    // A visible second count reads as progress; a static screen reads as a hang.
+    useEffect(() => {
+        if (!busy) return;
+        setElapsed(0);
+        const startedAt = Date.now();
+        const id = setInterval(
+            () => setElapsed(Math.round((Date.now() - startedAt) / 1000)),
+            1000,
+        );
+        return () => clearInterval(id);
+    }, [busy]);
 
     const send = useCallback(async (question: string) => {
         const q = question.trim();
@@ -279,7 +358,26 @@ export default function Chat() {
                     try { ev = JSON.parse(line); } catch { continue; }
 
                     if (ev.t === 'text') {
-                        patch((t) => ({ ...t, text: t.text + String(ev.v) }));
+                        // The answer has started, so the reasoning strip has
+                        // done its job — drop it rather than leave it stacked
+                        // above the reply.
+                        patch((t) => ({
+                            ...t,
+                            text: t.text + String(ev.v),
+                            thinking: '',
+                            phase: undefined,
+                            phaseName: undefined,
+                        }));
+                    } else if (ev.t === 'status') {
+                        const phase = ev.phase as Phase;
+                        patch((t) => ({
+                            ...t,
+                            phase,
+                            phaseName: phase === 'calling' ? String(ev.v ?? '') : t.phaseName,
+                            thinking: phase === 'thinking' && ev.v
+                                ? (t.thinking ?? '') + String(ev.v)
+                                : t.thinking,
+                        }));
                     } else if (ev.t === 'tool_start') {
                         const sources = (ev.sources as string[]) ?? [];
                         setActiveSources((prev) => new Set([...prev, ...sources]));
@@ -317,15 +415,23 @@ export default function Chat() {
         }
     }, [busy, turns]);
 
-    // Arriving from a dashboard card: /?q=... fires the question once. The ref
-    // guard matters — without it a re-render would resend on every pass.
+    // Arriving from a dashboard card: /?q=... loads the question into the
+    // composer but does NOT send it. Firing it automatically spent one of a
+    // visitor's daily questions on a click that never said it would, and it
+    // skipped the empty state — so the framing that says this runs on synthetic
+    // data never got shown to anyone who entered this way. Prefilling fixes
+    // both: the intro stays on screen with the question ready to edit or send.
+    // The ref guard keeps a re-render from clobbering what the visitor types.
     useEffect(() => {
         const q = searchParams.get('q');
-        if (q && !autoSent.current) {
-            autoSent.current = true;
-            void send(q);
+        if (q && !prefilled.current) {
+            prefilled.current = true;
+            setInput(q);
+            const el = inputRef.current;
+            el?.focus();
+            el?.setSelectionRange(q.length, q.length);
         }
-    }, [searchParams, send]);
+    }, [searchParams]);
 
     const empty = turns.length === 0;
 
@@ -348,8 +454,17 @@ export default function Chat() {
                             knows whatever somebody typed into a text field. Ask a question that
                             needs more than one of them.
                         </p>
-                        <p className="mt-2 font-mono text-[0.7rem] text-ink-600">
-                            Synthetic data, generated on purpose. Plant date is 2026-07-29.
+                        <p className="mt-3 max-w-[68ch] text-[0.82rem] leading-relaxed text-ink-500">
+                            Built from scratch for foundry supervisors, schedulers, and quality
+                            engineers. Every row is{' '}
+                            <Link
+                                href="/data"
+                                className="text-brand-300 underline decoration-shell-600 underline-offset-2 transition-colors hover:decoration-brand-300"
+                            >
+                                synthetic
+                            </Link>
+                            , generated from a fixed seed — no real plant or customer data. Plant
+                            date is pinned to {DATASET_TODAY}.
                         </p>
 
                         <div className="mt-8 space-y-px">
@@ -399,10 +514,8 @@ export default function Chat() {
                                         </div>
                                     )}
 
-                                    {busy && i === turns.length - 1 && !turn.text && turn.tools.length === 0 && (
-                                        <div className="font-mono text-[0.74rem] text-ink-600">
-                                            reading<span className="animate-blink">_</span>
-                                        </div>
+                                    {busy && i === turns.length - 1 && !turn.text && (
+                                        <ThinkingStrip turn={turn} seconds={elapsed} />
                                     )}
 
                                     {turn.error && (
@@ -439,6 +552,7 @@ export default function Chat() {
                     <div className={`${MEASURE} flex items-center gap-2`}>
                         <span className="font-mono text-[0.85rem] text-brand-500">&gt;</span>
                         <input
+                            ref={inputRef}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             disabled={busy}
