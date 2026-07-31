@@ -60,7 +60,12 @@ export function ScrapTrend({ points, reasons }: { points: ScrapPoint[]; reasons:
      * up if the stack ran past the bottom of the plot. Two passes is enough for
      * four labels and keeps the order matching the lines.
      */
-    const LABEL_GAP = 11;
+    // 1.5x the label's own font size. An earlier 11 (1.1x) technically
+    // separated the baselines and still read as a stack: the viewBox scales
+    // down on a normal screen, so the gap arrives as ~8px around 10px type and
+    // the line boxes overlap even where the glyphs do not.
+    const LABEL_FONT = 10;
+    const LABEL_GAP = LABEL_FONT * 1.5;
     const placeLabels = (() => {
         const items = reasons.map((code, si) => {
             const values = byReason.get(code)!;
@@ -147,7 +152,7 @@ export function ScrapTrend({ points, reasons }: { points: ScrapPoint[]; reasons:
                             />
                         )}
                         <text x={PAD_L + plotW + 8} y={labelY + 3}
-                              fill={SERIES_COLORS[si]} fontSize={10} fontFamily="var(--font-mono)">
+                              fill={SERIES_COLORS[si]} fontSize={LABEL_FONT} fontFamily="var(--font-mono)">
                             {code}
                         </text>
                     </g>
