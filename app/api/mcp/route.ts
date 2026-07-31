@@ -28,6 +28,7 @@ import { registerFoundryTools } from '@/lib/mcp';
 import { TOOLS } from '@/lib/tools/index';
 import { reserveMcpCall } from '@/lib/ratelimit';
 import { DATASET_TODAY } from '@/lib/dataset';
+import { BUILD_SHA, BUILD_TIME } from '@/lib/build';
 
 // A JSON-RPC endpoint must never be prerendered or cached.
 export const dynamic = 'force-dynamic';
@@ -82,6 +83,8 @@ export async function GET(request: Request): Promise<Response> {
         tools: TOOLS.length,
         plant_date: DATASET_TODAY,
         data: 'synthetic — no real plant or customer data',
+        // So a client can say which build it reached, rather than assuming.
+        build: `${BUILD_SHA} (${BUILD_TIME} UTC)`,
         connect: `claude mcp add --transport http foundry-ops ${PUBLIC_URL}`,
         docs: 'https://github.com/nwcarlson-dev/foundry-ops-ai/blob/main/docs/MCP.md',
     });

@@ -12,6 +12,7 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BUILD_SHA, BUILD_TIME } from '@/lib/build';
 
 /**
  * The page gutter. Fluid width, responsive margins — the container tracks the
@@ -100,10 +101,17 @@ export function AppHeader({
                     ink-500 rather than ink-600 — this carries a label, and the
                     token comments in globals.css reserve ink-600 for decoration. */}
                 <span
-                    title="A portfolio demo. The plant, the jobs, and every number are generated."
+                    title={
+                        'A portfolio demo. The plant, the jobs, and every number are generated.\n' +
+                        `Build ${BUILD_SHA}, ${BUILD_TIME} UTC.`
+                    }
                     className="sign shrink-0 border border-shell-600 px-1.5 py-0.5 text-[0.58rem] leading-none text-ink-500"
                 >
                     Demo<span className="hidden sm:inline"> · synthetic data</span>
+                    {/* The commit on screen. Kept at every width on purpose:
+                        it is worth less than nothing if it disappears exactly
+                        when someone is reviewing on a narrow window. */}
+                    <span className="ml-1 font-mono normal-case tracking-normal">{BUILD_SHA}</span>
                 </span>
                 {meta && (
                     <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 sm:inline">
