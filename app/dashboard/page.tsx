@@ -71,14 +71,39 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/dashboard')
-            .then(async (r) => {
-                const body = await r.json();
-                if (!r.ok) throw new Error(body.error ?? `Request failed (${r.status})`);
-                return body as Dashboard;
-            })
-            .then(setData)
-            .catch((e: Error) => setError(e.message));
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const res = await fetch('/api/dashboard');
+                const body = await res.json();
+                if (!res.ok) throw new Error(body.error ?? `Request failed (${res.status})`);
+                if (cancelled) return;
+
+                const dashboard = body as Dashboard & { narrative_pending?: boolean };
+                setData(dashboard);
+
+                // The numbers are on screen now. Only if the prose was not
+                // already cached do we go and have it written — the page never
+                // waits on a model call to render, which is what used to cost
+                // every visitor about nine seconds of loading state.
+                if (!dashboard.narrative_pending) return;
+
+                const nr = await fetch('/api/dashboard/narrative');
+                if (!nr.ok || cancelled) return;
+                const { narratives } = await nr.json() as { narratives: Record<string, string> };
+                if (cancelled || !narratives) return;
+
+                setData((prev) => prev && ({
+                    ...prev,
+                    findings: prev.findings.map((f) => ({ ...f, narrative: narratives[f.id] })),
+                }));
+            } catch (e) {
+                if (!cancelled) setError((e as Error).message);
+            }
+        })();
+
+        return () => { cancelled = true; };
     }, []);
 
     return (

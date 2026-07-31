@@ -59,15 +59,23 @@ const NAV = [
 
 export function AppHeader({
     meta,
+    page: pageOverride,
     children,
 }: {
     /** Small monospace note beside the title — dataset date, week, row count. */
     meta?: string;
+    /**
+     * Names a page that is not a destination — in practice only the 404, which
+     * matches no NAV entry and would otherwise render a bare product name.
+     * Real pages must NOT pass this: taking their name from NAV is what stops a
+     * header and its nav item drifting apart, which they previously had.
+     */
+    page?: string;
     /** Optional second row inside the header (the chat's source bus). */
     children?: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const page = NAV.find((item) => item.href === pathname)?.label;
+    const page = pageOverride ?? NAV.find((item) => item.href === pathname)?.label;
 
     return (
         <header className="rule-brand bg-shell-900/80 backdrop-blur">

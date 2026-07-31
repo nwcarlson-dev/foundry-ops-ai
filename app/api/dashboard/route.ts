@@ -1,91 +1,45 @@
 /**
  * Dashboard data.
  *
- * Detection is entirely deterministic (lib/anomalies.ts). The model is asked for
- * exactly one thing: a sentence of narrative per finding, over numbers it did
- * not produce and cannot change.
+ * Detection is entirely deterministic (lib/anomalies.ts). This route serves that
+ * and nothing else: it attaches the model's one-line notes if they are already
+ * cached, but it will never wait for them to be written.
  *
- * Narratives are cached against a fingerprint of the findings. The dataset is
- * fixed and seeded, so the fingerprint is stable and a warm process serves the
- * dashboard without touching the API at all — which matters when the URL is
- * public and the billing account is mine.
+ * That distinction is the whole point. This route used to await generation
+ * before responding, behind a module-level cache that is always empty on
+ * serverless — so a visitor waited ~9s on a loading state for prose describing
+ * numbers this route had finished computing in 0.4s. Generation now lives at
+ * ./narrative, which the page requests only after it has already painted.
  */
-import Anthropic from '@anthropic-ai/sdk';
-import { getDashboard, type Finding } from '@/lib/anomalies';
-import { MODEL } from '@/lib/agent/loop';
+import { getDashboard } from '@/lib/anomalies';
+import { readDashboardNarratives } from '@/lib/narrative/dashboard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-let cache: { key: string; narratives: Record<string, string> } | null = null;
-
-const fingerprint = (findings: Finding[]) =>
-    findings.map((f) => `${f.id}:${f.detail}`).join('|');
-
-async function narrate(findings: Finding[]): Promise<Record<string, string>> {
-    if (findings.length === 0) return {};
-
-    const key = fingerprint(findings);
-    if (cache?.key === key) return cache.narratives;
-    if (!process.env.ANTHROPIC_API_KEY) return {};
-
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-    const response = await client.messages.create({
-        model: MODEL,
-        max_tokens: 1200,
-        // Shallow work on numbers that are already computed — no reason to pay
-        // for deep reasoning here.
-        output_config: { effort: 'low' },
-        system:
-            'You write one-line notes for a foundry supervisor\'s dashboard at an aluminium ' +
-            'sand and permanent-mold plant. For each finding you are given, write ONE sentence ' +
-            'saying what it most likely means and what to check next. Assume the reader knows ' +
-            'castings — do not explain what a defect is. Never restate the numbers you were ' +
-            'given; they are already on screen. Never invent a number, job, or heat. ' +
-            'Reply as JSON: an object mapping each finding id to its sentence, nothing else.',
-        messages: [{
-            role: 'user',
-            content: findings
-                .map((f) => `id: ${f.id}\ntitle: ${f.title}\nfacts: ${f.detail}`)
-                .join('\n\n'),
-        }],
-    });
-
-    // Sonnet 5 can decline; check before reading content.
-    if (response.stop_reason === 'refusal') return {};
-
-    const text = response.content.find((b) => b.type === 'text')?.text ?? '';
-    try {
-        const parsed = JSON.parse(text.replace(/^```(?:json)?|```$/gm, '').trim());
-        const narratives = Object.fromEntries(
-            Object.entries(parsed as Record<string, unknown>)
-                .filter(([, v]) => typeof v === 'string')
-                .map(([k, v]) => [k, String(v)]),
-        );
-        cache = { key, narratives };
-        return narratives;
-    } catch {
-        return {};   // a dashboard without narrative is still a working dashboard
-    }
-}
 
 export async function GET(request: Request) {
     try {
         const dashboard = await getDashboard();
 
-        // ?narrate=0 renders the deterministic dashboard with no API call.
+        // ?narrate=0 renders the deterministic dashboard with no cache lookup.
         const wantNarrative = new URL(request.url).searchParams.get('narrate') !== '0';
-        if (wantNarrative) {
-            const narratives = await narrate(dashboard.findings);
-            for (const f of dashboard.findings) {
-                f.narrative = narratives[f.id];
-            }
+        const narratives = wantNarrative
+            ? await readDashboardNarratives(dashboard.findings)
+            : {};
+
+        for (const f of dashboard.findings) {
+            f.narrative = narratives?.[f.id];
         }
 
-        return Response.json(dashboard, {
-            headers: { 'Cache-Control': 'no-store' },
-        });
+        return Response.json(
+            {
+                ...dashboard,
+                // Whether the page should go and ask for prose now that it has
+                // its numbers. Missing narratives are normal, not an error.
+                narrative_pending: wantNarrative && narratives === null,
+            },
+            { headers: { 'Cache-Control': 'no-store' } },
+        );
     } catch (err) {
         return Response.json(
             { error: err instanceof Error ? err.message : 'Dashboard query failed.' },

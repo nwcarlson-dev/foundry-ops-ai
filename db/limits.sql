@@ -31,3 +31,20 @@ CREATE TABLE IF NOT EXISTS app.usage_month (
 
 -- Old per-IP rows serve no purpose once the day has passed.
 CREATE INDEX IF NOT EXISTS usage_day_day_idx ON app.usage_day (day);
+
+-- Model-written prose, keyed by a fingerprint of the facts it describes.
+--
+-- The dashboard's findings and the schedule's sequence are deterministic over a
+-- fixed dataset, so a given fingerprint always describes the same numbers and
+-- its sentence never goes stale. Caching this in a module-level variable was
+-- the bug it replaces: on serverless every request is a fresh isolated process,
+-- so that cache was empty for nearly every visitor and each one waited ~9s for
+-- prose over numbers that were already computed.
+--
+-- Here for the same reason as the counters above: it must survive `npm run
+-- seed`, and it must survive the process.
+CREATE TABLE IF NOT EXISTS app.narrative_cache (
+    key        TEXT PRIMARY KEY,
+    payload    JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

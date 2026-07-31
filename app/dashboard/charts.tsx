@@ -52,6 +52,43 @@ export function ScrapTrend({ points, reasons }: { points: ScrapPoint[]; reasons:
     const ticks = [0, Math.round(max / 2), max];
     const shortWeek = (w: string) => w.slice(5).replace('-', '/');
 
+    /**
+     * Series-end labels, pushed apart so they stay readable where the lines
+     * converge — the right edge is exactly where scrap codes tend to meet.
+     *
+     * Sort by ideal position, walk down enforcing a minimum gap, then walk back
+     * up if the stack ran past the bottom of the plot. Two passes is enough for
+     * four labels and keeps the order matching the lines.
+     */
+    const LABEL_GAP = 11;
+    const placeLabels = (() => {
+        const items = reasons.map((code, si) => {
+            const values = byReason.get(code)!;
+            return { code, si, anchorY: y(values[values.length - 1]) };
+        });
+
+        const sorted = [...items].sort((a, b) => a.anchorY - b.anchorY);
+        const placed = sorted.map((it) => ({ ...it, labelY: it.anchorY }));
+
+        for (let i = 1; i < placed.length; i++) {
+            const gap = placed[i].labelY - placed[i - 1].labelY;
+            if (gap < LABEL_GAP) placed[i].labelY = placed[i - 1].labelY + LABEL_GAP;
+        }
+
+        const bottom = PAD_T + plotH;
+        const overflow = placed[placed.length - 1].labelY - bottom;
+        if (overflow > 0) {
+            for (const p of placed) p.labelY -= overflow;
+            for (let i = placed.length - 2; i >= 0; i--) {
+                const gap = placed[i + 1].labelY - placed[i].labelY;
+                if (gap < LABEL_GAP) placed[i].labelY = placed[i + 1].labelY - LABEL_GAP;
+            }
+        }
+
+        for (const p of placed) p.labelY = Math.max(PAD_T + 4, p.labelY);
+        return placed;
+    })();
+
     return (
         <figure className="m-0">
             <svg
@@ -97,16 +134,24 @@ export function ScrapTrend({ points, reasons }: { points: ScrapPoint[]; reasons:
                     })}
                 </g>
 
-                {/* Direct labels at the series end — identity without a lookup. */}
-                {reasons.map((code, si) => {
-                    const values = byReason.get(code)!;
-                    return (
-                        <text key={code} x={PAD_L + plotW + 8} y={y(values[values.length - 1]) + 3}
+                {/* Direct labels at the series end — identity without a lookup.
+                    Series converge, so the ideal positions collide and stack
+                    into an unreadable pile; nudge them apart and draw a leader
+                    to wherever the label had to move. */}
+                {placeLabels.map(({ code, si, anchorY, labelY }) => (
+                    <g key={code}>
+                        {Math.abs(labelY - anchorY) > 1 && (
+                            <polyline
+                                points={`${PAD_L + plotW},${anchorY} ${PAD_L + plotW + 4},${labelY} ${PAD_L + plotW + 6},${labelY}`}
+                                fill="none" stroke={SERIES_COLORS[si]} strokeWidth={1} opacity={0.5}
+                            />
+                        )}
+                        <text x={PAD_L + plotW + 8} y={labelY + 3}
                               fill={SERIES_COLORS[si]} fontSize={10} fontFamily="var(--font-mono)">
                             {code}
                         </text>
-                    );
-                })}
+                    </g>
+                ))}
 
                 {/* Crosshair + hit targets */}
                 {hover !== null && (

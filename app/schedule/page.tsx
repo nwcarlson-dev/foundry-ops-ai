@@ -110,14 +110,25 @@ export default function SchedulePage() {
         let cancelled = false;
 
         (async () => {
+            const q = dept ? `?dept=${dept}` : '';
             try {
-                const res = await fetch(`/api/schedule${dept ? `?dept=${dept}` : ''}`, {
-                    signal: controller.signal,
-                });
+                const res = await fetch(`/api/schedule${q}`, { signal: controller.signal });
                 const body = await res.json();
                 if (cancelled) return;
                 if (!res.ok) throw new Error(body.error ?? `Request failed (${res.status})`);
                 setData(body);
+                setLoading(false);
+
+                // Grid is up. Fetch the written explanation separately, and only
+                // when it was not already cached — waiting on it before showing
+                // the sequence made every department click cost a model call.
+                if (!body.summary_pending) return;
+
+                const sr = await fetch(`/api/schedule/narrative${q}`, { signal: controller.signal });
+                if (!sr.ok || cancelled) return;
+                const { summary } = await sr.json() as { summary: string | null };
+                if (cancelled || !summary) return;
+                setData((prev) => prev && { ...prev, summary });
             } catch (e) {
                 if (!cancelled && (e as Error).name !== 'AbortError') {
                     setError((e as Error).message);

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "seed": "tsx scripts/generate.ts",
     "verify": "tsx scripts/verify.ts",
+    "warm": "tsx scripts/warm.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "ask": "tsx scripts/ask.ts",
     "mcp": "tsx mcp/server.ts"

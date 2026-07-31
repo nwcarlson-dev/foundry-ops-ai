@@ -138,11 +138,22 @@ cp .env.example .env.local        # add DATABASE_URL and ANTHROPIC_API_KEY
 npm run seed                      # ~76k rows from a fixed seed, reproducible
 npm run verify                    # 37 assertions: every planted signal detectable
 npm test                          # 48 assertions: tools, both MCP transports, scheduler
+npm run warm                      # pre-write the dashboard and schedule prose
 npm run dev
 
 npm run ask -- "which open jobs are at risk and why?"   # same loop, no browser
 npm run mcp                                             # stdio MCP server
 ```
+
+`warm` matters more than it looks. The dashboard's notes and the schedule's
+explanation are the only model output on those pages, and both are cached in
+Postgres against a fingerprint of the facts they describe. Generating them on
+demand behind a module-level cache is what a single-server habit produces and
+what serverless punishes: every request lands on a fresh isolated function, so
+that cache was empty for nearly every visitor and each one waited **9.5 seconds**
+for prose over numbers that were ready in 0.4s. Now neither page ever waits on a
+model call — a cache miss renders the numbers immediately and fills the prose in
+afterwards — and `warm` means the miss never happens.
 
 ### The tests are the point, not decoration
 
