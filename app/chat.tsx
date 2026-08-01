@@ -15,7 +15,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { DATASET_TODAY } from '@/lib/dataset';
 import { Markdown } from './markdown';
-import { AppHeader, SHELL, MEASURE, ErrorBox } from './shell';
+import { AppFrame, PROSE, ErrorBox } from './shell';
 import { SOURCE_COLOR } from './sources';
 
 // ---------------------------------------------------------------------------
@@ -95,7 +95,9 @@ function SourceBus({ active, live }: { active: Set<string>; live: boolean }) {
                 return (
                     <div
                         key={s.id}
-                        className="flex-1 bg-shell-850 px-3 py-2 transition-colors duration-300"
+                        // min-w-0 so four cells share the container instead of
+                        // pushing the strip past the page gutter on a phone.
+                        className="min-w-0 flex-1 bg-shell-850 px-3 py-2 transition-colors duration-300"
                         style={on ? { background: 'color-mix(in srgb, var(--color-shell-800) 88%, white)' } : undefined}
                     >
                         <div className="flex items-center gap-2">
@@ -109,7 +111,7 @@ function SourceBus({ active, live }: { active: Set<string>; live: boolean }) {
                                 }}
                             />
                             <span
-                                className="sign text-[0.68rem] leading-none transition-colors duration-300"
+                                className="sign truncate text-[0.68rem] leading-none transition-colors duration-300"
                                 style={{ color: on ? s.color : 'var(--color-ink-600)' }}
                             >
                                 {s.label}
@@ -434,159 +436,158 @@ export default function Chat() {
     const empty = turns.length === 0;
 
     return (
-        <div className="flex min-h-full flex-1 flex-col">
-            {/* --- header ---------------------------------------------------- */}
-            <AppHeader>
-                <SourceBus active={activeSources} live={busy} />
-            </AppHeader>
+        <AppFrame
+            footer={
+                /* Asking is the whole point of the app, so the field is built
+                   like one: a real bordered input on a raised ground that
+                   brightens to brand on focus, next to a filled button.
+                   Borderless text on a translucent bar read as a status strip —
+                   you had to go looking for the one control that matters.
+                   brand-600 is the fill role in the token set; nothing else on
+                   these pages claims it.
 
-            {/* --- transcript ------------------------------------------------ */}
-            <main className={`${SHELL} flex-1`}>
-                {empty ? (
-                    <div className={`${MEASURE} py-12 animate-rise`}>
-                        <p className="max-w-[68ch] text-[0.95rem] leading-relaxed text-ink-300">
-                            Four plant systems.{' '}
-                            <span className="text-ink-100">No shared keys.</span>{' '}
-                            Epicor knows job numbers, Thrive knows heat numbers, the Ignition
-                            historian knows only tag paths and timestamps, and the monday board
-                            knows whatever somebody typed into a text field. Ask a question that
-                            needs more than one of them.
-                        </p>
-                        <p className="mt-3 max-w-[68ch] text-[0.82rem] leading-relaxed text-ink-500">
-                            Built from scratch for foundry supervisors, schedulers, and quality
-                            engineers. Every row is{' '}
-                            <Link
-                                href="/data"
-                                className="text-brand-300 underline decoration-shell-600 underline-offset-2 transition-colors hover:decoration-brand-300"
-                            >
-                                synthetic
-                            </Link>
-                            , generated from a fixed seed — no real plant or customer data. Plant
-                            date is pinned to {DATASET_TODAY}.
-                        </p>
-
-                        <div className="mt-8 space-y-px">
-                            <div className="sign mb-2 text-[0.64rem] text-ink-600">Try one</div>
-                            {SUGGESTIONS.map((s) => (
-                                <button
-                                    key={s.q}
-                                    onClick={() => send(s.q)}
-                                    className="group flex w-full items-center gap-3 border-l-2 bg-shell-850/50 px-3.5 py-2.5 text-left transition-all hover:bg-shell-800"
-                                    style={{
-                                        borderColor: s.flagship
-                                            ? 'var(--color-brand-500)'
-                                            : 'var(--color-shell-600)',
-                                    }}
-                                >
-                                    <span className="flex-1 text-[0.88rem] text-ink-300 transition-colors group-hover:text-ink-100">
-                                        {s.label}
-                                    </span>
-                                    <span className="hidden shrink-0 font-mono text-[0.64rem] text-ink-600 sm:inline">
-                                        {s.note}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <div className={`${MEASURE} space-y-7 py-7`}>
-                        {turns.map((turn, i) =>
-                            turn.role === 'user' ? (
-                                <div key={i} className="animate-rise">
-                                    <div className="sign mb-1.5 text-[0.6rem] text-ink-600">Asked</div>
-                                    <div className="border-l-2 border-brand-500 pl-3 text-[0.95rem] text-ink-100">
-                                        {turn.text}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div key={i}>
-                                    {turn.tools.length > 0 && (
-                                        <div className="mb-4 space-y-1">
-                                            {turn.tools.map((c) => <ToolChipRow key={c.id} call={c} />)}
-                                        </div>
-                                    )}
-
-                                    {turn.text && (
-                                        <div className="answer text-[0.93rem] text-ink-300 animate-rise">
-                                            <Markdown text={turn.text} />
-                                        </div>
-                                    )}
-
-                                    {busy && i === turns.length - 1 && !turn.text && (
-                                        <ThinkingStrip turn={turn} seconds={elapsed} />
-                                    )}
-
-                                    {turn.error && (
-                                        <div className="mt-2">
-                                            <ErrorBox>{turn.error}</ErrorBox>
-                                        </div>
-                                    )}
-
-                                    {turn.usage && (
-                                        <div className="mt-3 font-mono text-[0.62rem] text-ink-600">
-                                            {turn.usage.input_tokens.toLocaleString()} in ·{' '}
-                                            {turn.usage.output_tokens.toLocaleString()} out
-                                            {turn.usage.cache_read_input_tokens > 0 && (
-                                                <> · {turn.usage.cache_read_input_tokens.toLocaleString()} cached</>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ),
-                        )}
-                        <div ref={bottomRef} />
-                    </div>
-                )}
-            </main>
-
-            {/* --- composer --------------------------------------------------- */}
-            <div className="sticky bottom-0 rule-t bg-shell-900/90 backdrop-blur">
+                   Width comes from the frame, so the composer is exactly as
+                   wide as the transcript above it on every screen. */
                 <form
                     onSubmit={(e) => { e.preventDefault(); send(input); }}
-                    className={`${SHELL} py-3`}
+                    className="flex items-stretch gap-2"
                 >
-                    {/* Same measure as the transcript, so the prompt sits directly
-                        under the conversation rather than drifting wide of it. */}
-                    {/* Asking is the whole point of the app, so the field is
-                        built like one: a real bordered input on a raised ground
-                        that brightens to brand on focus, next to a filled
-                        button. Borderless text on a translucent bar read as a
-                        status strip — you had to go looking for the one control
-                        that matters. brand-600 is the fill role in the token
-                        set; nothing else on these pages claims it. */}
-                    <div className={`${MEASURE} flex items-stretch gap-2`}>
-                        <div className="flex min-w-0 flex-1 items-center gap-2 border border-shell-600 bg-shell-850 px-3 py-2.5 transition-colors focus-within:border-brand-500">
-                            <span className="shrink-0 font-mono text-[0.9rem] text-brand-400">&gt;</span>
-                            <input
-                                ref={inputRef}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                disabled={busy}
-                                placeholder={busy ? 'working…' : 'Ask about jobs, scrap, heats, capacity, or commitments'}
-                                className="min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink-100 placeholder:text-ink-500 focus:outline-none disabled:opacity-50"
-                            />
-                            {quota && quota.remaining <= 5 && (
-                                <span
-                                    className="shrink-0 font-mono text-[0.64rem]"
-                                    style={{ color: quota.remaining === 0 ? 'var(--color-danger)' : 'var(--color-warn)' }}
-                                    title={`This demo allows ${quota.limit} questions per visitor per day.`}
-                                >
-                                    {quota.remaining === 0
-                                        ? 'daily limit reached'
-                                        : `${quota.remaining} left today`}
-                                </span>
-                            )}
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={busy || !input.trim() || quota?.remaining === 0}
-                            className="sign shrink-0 bg-brand-600 px-5 text-[0.68rem] text-ink-100 transition-colors enabled:hover:bg-brand-500 disabled:opacity-30"
-                        >
-                            Ask
-                        </button>
+                    <div className="flex min-w-0 flex-1 items-center gap-2 border border-shell-600 bg-shell-850 px-3 py-2.5 transition-colors focus-within:border-brand-500">
+                        <span className="shrink-0 font-mono text-[0.9rem] text-brand-400">&gt;</span>
+                        <input
+                            ref={inputRef}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            disabled={busy}
+                            placeholder={busy ? 'working…' : 'Ask about jobs, scrap, heats, capacity, or commitments'}
+                            className="min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink-100 placeholder:text-ink-500 focus:outline-none disabled:opacity-50"
+                        />
+                        {quota && quota.remaining <= 5 && (
+                            <span
+                                className="shrink-0 font-mono text-[0.64rem]"
+                                style={{ color: quota.remaining === 0 ? 'var(--color-danger)' : 'var(--color-warn)' }}
+                                title={`This demo allows ${quota.limit} questions per visitor per day.`}
+                            >
+                                {quota.remaining === 0
+                                    ? 'daily limit reached'
+                                    : `${quota.remaining} left today`}
+                            </span>
+                        )}
                     </div>
+                    <button
+                        type="submit"
+                        disabled={busy || !input.trim() || quota?.remaining === 0}
+                        className="sign shrink-0 bg-brand-600 px-5 text-[0.68rem] text-ink-100 transition-colors enabled:hover:bg-brand-500 disabled:opacity-30"
+                    >
+                        Ask
+                    </button>
                 </form>
-            </div>
-        </div>
+            }
+        >
+            {/* The source bus. It reads as header furniture, and it used to be
+                rendered inside the header — which pushed the red rule 59px
+                lower here than on every other route, because it is a second row
+                that only this page has. It belongs to this page, so it lives in
+                this page's body, immediately below the rule that now lands at
+                the same Y everywhere. */}
+            <SourceBus active={activeSources} live={busy} />
+
+            {/* --- transcript ------------------------------------------------ */}
+            {empty ? (
+                <div className="mt-5 animate-rise">
+                    <p className={`${PROSE} text-[0.95rem] leading-relaxed text-ink-300`}>
+                        Four plant systems.{' '}
+                        <span className="text-ink-100">No shared keys.</span>{' '}
+                        Epicor knows job numbers, Thrive knows heat numbers, the Ignition
+                        historian knows only tag paths and timestamps, and the monday board
+                        knows whatever somebody typed into a text field. Ask a question that
+                        needs more than one of them.
+                    </p>
+                    <p className={`${PROSE} mt-3 text-[0.82rem] leading-relaxed text-ink-500`}>
+                        Built from scratch for foundry supervisors, schedulers, and quality
+                        engineers. Every row is{' '}
+                        <Link
+                            href="/data"
+                            className="text-brand-300 underline decoration-shell-600 underline-offset-2 transition-colors hover:decoration-brand-300"
+                        >
+                            synthetic
+                        </Link>
+                        , generated from a fixed seed — no real plant or customer data. Plant
+                        date is pinned to {DATASET_TODAY}.
+                    </p>
+
+                    <div className="mt-8 space-y-px">
+                        <div className="sign mb-2 text-[0.64rem] text-ink-600">Try one</div>
+                        {SUGGESTIONS.map((s) => (
+                            <button
+                                key={s.q}
+                                onClick={() => send(s.q)}
+                                className="group flex w-full items-center gap-3 border-l-2 bg-shell-850/50 px-3.5 py-2.5 text-left transition-all hover:bg-shell-800"
+                                style={{
+                                    borderColor: s.flagship
+                                        ? 'var(--color-brand-500)'
+                                        : 'var(--color-shell-600)',
+                                }}
+                            >
+                                <span className="flex-1 text-[0.88rem] text-ink-300 transition-colors group-hover:text-ink-100">
+                                    {s.label}
+                                </span>
+                                <span className="hidden shrink-0 font-mono text-[0.64rem] text-ink-600 sm:inline">
+                                    {s.note}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="mt-5 space-y-7">
+                    {turns.map((turn, i) =>
+                        turn.role === 'user' ? (
+                            <div key={i} className="animate-rise">
+                                <div className="sign mb-1.5 text-[0.6rem] text-ink-600">Asked</div>
+                                <div className="border-l-2 border-brand-500 pl-3 text-[0.95rem] text-ink-100">
+                                    {turn.text}
+                                </div>
+                            </div>
+                        ) : (
+                            <div key={i}>
+                                {turn.tools.length > 0 && (
+                                    <div className="mb-4 space-y-1">
+                                        {turn.tools.map((c) => <ToolChipRow key={c.id} call={c} />)}
+                                    </div>
+                                )}
+
+                                {turn.text && (
+                                    <div className="answer text-[0.93rem] text-ink-300 animate-rise">
+                                        <Markdown text={turn.text} />
+                                    </div>
+                                )}
+
+                                {busy && i === turns.length - 1 && !turn.text && (
+                                    <ThinkingStrip turn={turn} seconds={elapsed} />
+                                )}
+
+                                {turn.error && (
+                                    <div className="mt-2">
+                                        <ErrorBox>{turn.error}</ErrorBox>
+                                    </div>
+                                )}
+
+                                {turn.usage && (
+                                    <div className="mt-3 font-mono text-[0.62rem] text-ink-600">
+                                        {turn.usage.input_tokens.toLocaleString()} in ·{' '}
+                                        {turn.usage.output_tokens.toLocaleString()} out
+                                        {turn.usage.cache_read_input_tokens > 0 && (
+                                            <> · {turn.usage.cache_read_input_tokens.toLocaleString()} cached</>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ),
+                    )}
+                    <div ref={bottomRef} />
+                </div>
+            )}
+        </AppFrame>
     );
 }

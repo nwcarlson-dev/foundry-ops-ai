@@ -12,7 +12,7 @@
  */
 import { buildSchedule } from '@/lib/scheduler';
 import { readScheduleSummary } from '@/lib/narrative/schedule';
-import { AppHeader, Page, ErrorBox } from '../shell';
+import { AppFrame, ErrorBox } from '../shell';
 import { ScheduleView } from './view';
 
 export const revalidate = 3600;
@@ -23,14 +23,11 @@ export default async function SchedulePage() {
         schedule = await buildSchedule({});
     } catch (err) {
         return (
-            <div className="flex min-h-full flex-1 flex-col">
-                <AppHeader meta="unavailable" />
-                <Page>
-                    <ErrorBox>
-                        {err instanceof Error ? err.message : 'Schedule generation failed.'}
-                    </ErrorBox>
-                </Page>
-            </div>
+            <AppFrame meta="unavailable">
+                <ErrorBox>
+                    {err instanceof Error ? err.message : 'Schedule generation failed.'}
+                </ErrorBox>
+            </AppFrame>
         );
     }
 
@@ -39,11 +36,10 @@ export default async function SchedulePage() {
     const summary = await readScheduleSummary(schedule);
 
     return (
-        <div className="flex min-h-full flex-1 flex-col">
-            <AppHeader meta={`week of ${schedule.week_start}`} />
+        <AppFrame meta={`week of ${schedule.week_start}`}>
             <ScheduleView
                 initial={{ ...schedule, summary, summary_pending: summary === null }}
             />
-        </div>
+        </AppFrame>
     );
 }

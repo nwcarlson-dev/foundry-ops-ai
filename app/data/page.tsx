@@ -13,7 +13,7 @@
  * thing in the database that knows how the other four relate.
  */
 import { useEffect, useState } from 'react';
-import { AppHeader, Page, Panel, ErrorBox, PageNote, Loading } from '../shell';
+import { AppFrame, Panel, ErrorBox, PageNote, Loading, PROSE } from '../shell';
 import { SOURCE_COLOR } from '../sources';
 
 interface Relation {
@@ -121,167 +121,163 @@ export default function DataPage() {
     })).filter((g) => g.items.length > 0);
 
     return (
-        <div className="flex min-h-full flex-1 flex-col">
-            <AppHeader meta={`${relations?.length ?? 0} relations · four systems`} />
+        <AppFrame meta={`${relations?.length ?? 0} relations · four systems`}>
+            <p className={`${PROSE} mb-5 text-[0.86rem] leading-relaxed text-ink-300`}>
+                The four systems below share <strong className="text-ink-100">no keys</strong>.
+                Epicor knows <code className="font-mono text-brand-300">J-104829</code>.
+                Thrive knows <code className="font-mono text-brand-300">H26-0412</code> and its own
+                pattern codes. The historian knows only a tag path and a timestamp.
+                monday.com knows whatever a person typed. Read the rows and you can
+                check that for yourself — then look at <code className="font-mono text-brand-300">xref</code>,
+                which is the only thing in the database that spans them.
+            </p>
 
-            <Page>
-                <p className="mb-5 max-w-[68ch] text-[0.86rem] leading-relaxed text-ink-300">
-                    The four systems below share <strong className="text-ink-100">no keys</strong>.
-                    Epicor knows <code className="font-mono text-brand-300">J-104829</code>.
-                    Thrive knows <code className="font-mono text-brand-300">H26-0412</code> and its own
-                    pattern codes. The historian knows only a tag path and a timestamp.
-                    monday.com knows whatever a person typed. Read the rows and you can
-                    check that for yourself — then look at <code className="font-mono text-brand-300">xref</code>,
-                    which is the only thing in the database that spans them.
-                </p>
+            {error && <div className="mb-4"><ErrorBox>{error}</ErrorBox></div>}
 
-                {error && <div className="mb-4"><ErrorBox>{error}</ErrorBox></div>}
-
-                <div className="grid gap-5 lg:grid-cols-[15rem_1fr]">
-                    {/* --- navigator ------------------------------------------- */}
-                    <nav className="space-y-4">
-                        {!relations && !error && (
-                            <p className="font-mono text-[0.72rem] text-ink-600">
-                                reading catalogue<span className="animate-blink">_</span>
-                            </p>
-                        )}
-                        {grouped.map((g) => (
-                            <div key={g.schema}>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="block h-3 w-[3px] rounded-full"
-                                          style={{ background: SOURCE_COLOR[g.schema] }} />
-                                    <h2 className="sign text-[0.62rem]" style={{ color: SOURCE_COLOR[g.schema] }}>
-                                        {g.schema}
-                                    </h2>
-                                </div>
-                                <p className="mt-0.5 pl-[11px] font-mono text-[0.6rem] leading-snug text-ink-600">
-                                    {SCHEMA_NOTE[g.schema]?.label}
-                                    <br />
-                                    {SCHEMA_NOTE[g.schema]?.keyed}
-                                </p>
-                                <ul className="mt-1.5 space-y-px">
-                                    {g.items.map((r) => {
-                                        const full = `${r.schema}.${r.name}`;
-                                        const active = full === selected;
-                                        return (
-                                            <li key={full}>
-                                                <button
-                                                    onClick={() => selectRelation(full)}
-                                                    className={`flex w-full items-baseline gap-2 px-[11px] py-1 text-left font-mono text-[0.72rem] transition-colors ${
-                                                        active
-                                                            ? 'bg-shell-800 text-ink-100'
-                                                            : 'text-ink-500 hover:bg-shell-850 hover:text-ink-300'
-                                                    }`}
-                                                >
-                                                    <span className="truncate">{r.name}</span>
-                                                    {r.kind === 'view' && (
-                                                        <span className="text-[0.58rem] text-ink-600">view</span>
-                                                    )}
-                                                    <span className="ml-auto tabular-nums text-[0.64rem] text-ink-600">
-                                                        {r.rows.toLocaleString()}
-                                                    </span>
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
+            <div className="grid gap-5 lg:grid-cols-[15rem_1fr]">
+                {/* --- navigator ------------------------------------------- */}
+                <nav className="space-y-4">
+                    {!relations && !error && (
+                        <p className="font-mono text-[0.72rem] text-ink-600">
+                            reading catalogue<span className="animate-blink">_</span>
+                        </p>
+                    )}
+                    {grouped.map((g) => (
+                        <div key={g.schema}>
+                            <div className="flex items-baseline gap-2">
+                                <span className="block h-3 w-[3px] rounded-full"
+                                      style={{ background: SOURCE_COLOR[g.schema] }} />
+                                <h2 className="sign text-[0.62rem]" style={{ color: SOURCE_COLOR[g.schema] }}>
+                                    {g.schema}
+                                </h2>
                             </div>
-                        ))}
-                    </nav>
+                            <p className="mt-0.5 pl-[11px] font-mono text-[0.6rem] leading-snug text-ink-600">
+                                {SCHEMA_NOTE[g.schema]?.label}
+                                <br />
+                                {SCHEMA_NOTE[g.schema]?.keyed}
+                            </p>
+                            <ul className="mt-1.5 space-y-px">
+                                {g.items.map((r) => {
+                                    const full = `${r.schema}.${r.name}`;
+                                    const active = full === selected;
+                                    return (
+                                        <li key={full}>
+                                            <button
+                                                onClick={() => selectRelation(full)}
+                                                className={`flex w-full items-baseline gap-2 px-[11px] py-1 text-left font-mono text-[0.72rem] transition-colors ${
+                                                    active
+                                                        ? 'bg-shell-800 text-ink-100'
+                                                        : 'text-ink-500 hover:bg-shell-850 hover:text-ink-300'
+                                                }`}
+                                            >
+                                                <span className="truncate">{r.name}</span>
+                                                {r.kind === 'view' && (
+                                                    <span className="text-[0.58rem] text-ink-600">view</span>
+                                                )}
+                                                <span className="ml-auto tabular-nums text-[0.64rem] text-ink-600">
+                                                    {r.rows.toLocaleString()}
+                                                </span>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </nav>
 
-                    {/* --- table ----------------------------------------------- */}
-                    <Panel
-                        flush
-                        title={
-                            <span className="flex items-baseline gap-2">
-                                <span className="font-mono text-[0.78rem] text-ink-100">{selected}</span>
-                                {page && (
-                                    <span className="sign text-[0.58rem] text-ink-600">{page.kind}</span>
-                                )}
-                            </span>
-                        }
-                        meta={
-                            page
-                                ? page.total === 0
-                                    ? 'no rows'
-                                    : `${(page.offset + 1).toLocaleString()}–${Math.min(page.offset + page.limit, page.total).toLocaleString()} of ${page.total.toLocaleString()}`
-                                : undefined
-                        }
-                    >
-                        {loading && !page && <Loading verb="reading rows" />}
+                {/* --- table ----------------------------------------------- */}
+                <Panel
+                    flush
+                    title={
+                        <span className="flex items-baseline gap-2">
+                            <span className="font-mono text-[0.78rem] text-ink-100">{selected}</span>
+                            {page && (
+                                <span className="sign text-[0.58rem] text-ink-600">{page.kind}</span>
+                            )}
+                        </span>
+                    }
+                    meta={
+                        page
+                            ? page.total === 0
+                                ? 'no rows'
+                                : `${(page.offset + 1).toLocaleString()}–${Math.min(page.offset + page.limit, page.total).toLocaleString()} of ${page.total.toLocaleString()}`
+                            : undefined
+                    }
+                >
+                    {loading && !page && <Loading verb="reading rows" />}
 
-                        {page && (
-                            <>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-[0.74rem] tabular-nums">
-                                        <thead>
-                                            <tr>
-                                                {page.columns.map((c) => (
-                                                    <th key={c.name}
-                                                        className="whitespace-nowrap rule-b px-3 py-1.5 text-left font-normal">
-                                                        <span className="sign block text-[0.56rem] text-ink-300">
-                                                            {c.name}
-                                                        </span>
-                                                        <span className="block font-mono text-[0.56rem] text-ink-600">
-                                                            {c.type}
-                                                        </span>
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {page.rows.map((row, i) => (
-                                                <tr key={i} className="border-b border-shell-800 hover:bg-shell-800/50">
-                                                    {page.columns.map((c) => {
-                                                        const { text, muted } = cell(row[c.name]);
-                                                        return (
-                                                            <td key={c.name}
-                                                                className={`whitespace-nowrap px-3 py-1 font-mono ${muted ? 'text-ink-600 italic' : 'text-ink-300'}`}>
-                                                                {text}
-                                                            </td>
-                                                        );
-                                                    })}
-                                                </tr>
+                    {page && (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-[0.74rem] tabular-nums">
+                                    <thead>
+                                        <tr>
+                                            {page.columns.map((c) => (
+                                                <th key={c.name}
+                                                    className="whitespace-nowrap rule-b px-3 py-1.5 text-left font-normal">
+                                                    <span className="sign block text-[0.56rem] text-ink-300">
+                                                        {c.name}
+                                                    </span>
+                                                    <span className="block font-mono text-[0.56rem] text-ink-600">
+                                                        {c.type}
+                                                    </span>
+                                                </th>
                                             ))}
-                                        </tbody>
-                                    </table>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {page.rows.map((row, i) => (
+                                            <tr key={i} className="border-b border-shell-800 hover:bg-shell-800/50">
+                                                {page.columns.map((c) => {
+                                                    const { text, muted } = cell(row[c.name]);
+                                                    return (
+                                                        <td key={c.name}
+                                                            className={`whitespace-nowrap px-3 py-1 font-mono ${muted ? 'text-ink-600 italic' : 'text-ink-300'}`}>
+                                                            {text}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {page.total > page.limit && (
+                                <div className="flex items-center gap-3 rule-t px-4 py-2">
+                                    <button
+                                        disabled={page.offset === 0 || loading}
+                                        onClick={() => goto(Math.max(page.offset - page.limit, 0))}
+                                        className="sign border border-shell-600 px-2.5 py-1 text-[0.6rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
+                                    >
+                                        ← Prev
+                                    </button>
+                                    <button
+                                        disabled={page.offset + page.limit >= page.total || loading}
+                                        onClick={() => goto(page.offset + page.limit)}
+                                        className="sign border border-shell-600 px-2.5 py-1 text-[0.6rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
+                                    >
+                                        Next →
+                                    </button>
+                                    {loading && (
+                                        <span className="font-mono text-[0.64rem] text-ink-600">
+                                            loading<span className="animate-blink">_</span>
+                                        </span>
+                                    )}
                                 </div>
+                            )}
+                        </>
+                    )}
+                </Panel>
+            </div>
 
-                                {page.total > page.limit && (
-                                    <div className="flex items-center gap-3 rule-t px-4 py-2">
-                                        <button
-                                            disabled={page.offset === 0 || loading}
-                                            onClick={() => goto(Math.max(page.offset - page.limit, 0))}
-                                            className="sign border border-shell-600 px-2.5 py-1 text-[0.6rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
-                                        >
-                                            ← Prev
-                                        </button>
-                                        <button
-                                            disabled={page.offset + page.limit >= page.total || loading}
-                                            onClick={() => goto(page.offset + page.limit)}
-                                            className="sign border border-shell-600 px-2.5 py-1 text-[0.6rem] text-ink-300 transition-colors enabled:hover:border-brand-500 enabled:hover:text-brand-300 disabled:opacity-30"
-                                        >
-                                            Next →
-                                        </button>
-                                        {loading && (
-                                            <span className="font-mono text-[0.64rem] text-ink-600">
-                                                loading<span className="animate-blink">_</span>
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </Panel>
-                </div>
-
-                <PageNote>
-                    Every row is synthetic, generated from a fixed seed — no real plant data was
-                    used or available. The structure, vocabulary, and failure modes are real; the
-                    numbers are invented. Read-only: this endpoint can only SELECT, and only from
-                    the relations listed here.
-                </PageNote>
-            </Page>
-        </div>
+            <PageNote>
+                Every row is synthetic, generated from a fixed seed — no real plant data was
+                used or available. The structure, vocabulary, and failure modes are real; the
+                numbers are invented. Read-only: this endpoint can only SELECT, and only from
+                the relations listed here.
+            </PageNote>
+        </AppFrame>
     );
 }

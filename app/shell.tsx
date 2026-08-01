@@ -15,29 +15,27 @@ import { usePathname } from 'next/navigation';
 import { BUILD_SHA, BUILD_TIME } from '@/lib/build';
 
 /**
- * The page gutter. Fluid width, responsive margins — the container tracks the
- * viewport instead of snapping to a fixed column, and the gutter steps up with
- * available space the way a normal layout does.
+ * The one container. Every structural element on every route sits in this:
+ * the header row, the page body, and the chat composer.
  *
- * Width is deliberately unbounded: a data table wants every pixel a wide screen
- * offers. What must not run wide is *prose*, and that is solved where it belongs
- * — `.answer` and the page intros cap at 68ch in globals.css, a typographic
- * measure rather than a layout one.
+ * Not exported, and that is the point. Pages used to reach for their own
+ * `max-w-[…]` and their own padding, which is how the chat ended up in a 768px
+ * column with 48px of top padding while every other page ran full width with
+ * 24px. A page cannot set its frame if it cannot name it — it renders
+ * `<AppFrame>` and inherits this.
  *
- * Every header, body, and composer uses this one constant, so the left and right
- * gutters line up across all four pages at every breakpoint.
+ * The numbers live in globals.css as tokens, so changing the width or the
+ * gutter is one edit that lands on all five routes at once.
  */
-export const SHELL = 'mx-auto w-full px-4 sm:px-6 lg:px-8';
+const SHELL = 'mx-auto w-full max-w-[var(--layout-max)] px-4 sm:px-6 lg:px-8';
 
 /**
- * The reading column, for content that is read rather than scanned — the
- * conversation and the page intros. Dense surfaces (tables, the schedule grid,
- * the dashboard) deliberately do not use this: they want the full viewport.
- *
- * This is a typographic measure sitting *inside* the shared gutter, not a second
- * layout system. The gutters still line up across every page.
+ * A typographic measure for prose, sitting INSIDE the shared container — a cap
+ * on line length, not a page frame. Deliberately has no `mx-auto` and no
+ * `w-full`: it cannot centre a column or narrow the frame, only stop a
+ * paragraph running to 1400px. Tables, grids, and panels never use it.
  */
-export const MEASURE = 'mx-auto w-full max-w-[80ch]';
+export const PROSE = 'max-w-[68ch]';
 
 /**
  * Fixed order, every destination on every page. The current page stays in the
@@ -58,10 +56,23 @@ const NAV = [
     { href: '/tools', label: 'Tools' },
 ] as const;
 
-export function AppHeader({
+/**
+ * The header. One row, one fixed height, on every route.
+ *
+ * Not exported: it is reachable only through `AppFrame`, so no page can render
+ * it with different content, and there is no slot to hang a second row from.
+ * That slot is exactly what broke this — the chat put its source bus inside the
+ * header, which pushed the red rule (the header's bottom border) 59px lower on
+ * `/` than on the other four routes. Header-adjacent content that is specific
+ * to one page now goes in that page's body, below the rule.
+ *
+ * The row is `--layout-header-h` tall and nothing inside it can grow: every
+ * child is `shrink-0`, and the nav scrolls sideways rather than wrapping onto a
+ * second line. So the rule lands on the same Y at every width, on every page.
+ */
+function AppHeader({
     meta,
     page: pageOverride,
-    children,
 }: {
     /** Small monospace note beside the title — dataset date, week, row count. */
     meta?: string;
@@ -72,60 +83,74 @@ export function AppHeader({
      * header and its nav item drifting apart, which they previously had.
      */
     page?: string;
-    /** Optional second row inside the header (the chat's source bus). */
-    children?: React.ReactNode;
 }) {
     const pathname = usePathname();
     const page = pageOverride ?? NAV.find((item) => item.href === pathname)?.label;
 
     return (
         <header className="rule-brand bg-shell-900/80 backdrop-blur">
-            <div className={`${SHELL} flex items-baseline gap-3 py-3`}>
-                <span className="h-2 w-2 shrink-0 rounded-full bg-brand-500" />
-                {/* The product name stays constant and quiet; the page name is
-                    the bright part. Same two-part title on every surface, so
-                    where you are is always read in the same place. */}
-                <h1 className="sign flex shrink-0 items-baseline gap-1.5 text-[0.92rem]">
-                    <span className="text-ink-500">Foundry Ops</span>
-                    {page && (
-                        <>
-                            <span className="text-ink-600">·</span>
-                            <span className="text-ink-100">{page}</span>
-                        </>
-                    )}
-                </h1>
-                {/* Says what this is before anyone has to look for it. Lives in
-                    the shared header on purpose: the empty state is easy to
-                    miss and easy to skip past, and a visitor arriving on the
-                    dashboard or the schedule never sees it at all. Deliberately
-                    ink-500 rather than ink-600 — this carries a label, and the
-                    token comments in globals.css reserve ink-600 for decoration. */}
-                <span
-                    title={
-                        'A portfolio demo. The plant, the jobs, and every number are generated.\n' +
-                        `Build ${BUILD_SHA}, ${BUILD_TIME} UTC.`
-                    }
-                    className="sign shrink-0 border border-shell-600 px-1.5 py-0.5 text-[0.58rem] leading-none text-ink-500"
-                >
-                    Demo<span className="hidden sm:inline"> · synthetic data</span>
-                    {/* The commit on screen. Kept at every width on purpose:
-                        it is worth less than nothing if it disappears exactly
-                        when someone is reviewing on a narrow window. */}
-                    <span className="ml-1 font-mono normal-case tracking-normal">{BUILD_SHA}</span>
-                </span>
-                {meta && (
-                    <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 sm:inline">
-                        {meta}
+            <div
+                className={`${SHELL} flex h-[var(--layout-header-h)] items-center gap-3`}
+            >
+                {/* Title group. Baseline-aligned within itself, centred as a
+                    group in the fixed row — the internal alignment survives,
+                    the row height does not depend on it. */}
+                <div className="flex min-w-0 shrink-0 items-baseline gap-3">
+                    <span className="h-2 w-2 shrink-0 self-center rounded-full bg-brand-500" />
+                    {/* The product name stays constant and quiet; the page name
+                        is the bright part. Same two-part title on every surface,
+                        so where you are is always read in the same place. */}
+                    <h1 className="sign flex shrink-0 items-baseline gap-1.5 text-[0.92rem]">
+                        <span className="text-ink-500">Foundry Ops</span>
+                        {page && (
+                            <>
+                                <span className="text-ink-600">·</span>
+                                <span className="text-ink-100">{page}</span>
+                            </>
+                        )}
+                    </h1>
+                    {/* Says what this is before anyone has to look for it. Lives
+                        in the shared header on purpose: the empty state is easy
+                        to miss and easy to skip past, and a visitor arriving on
+                        the dashboard or the schedule never sees it at all.
+                        Deliberately ink-500 rather than ink-600 — this carries a
+                        label, and the token comments in globals.css reserve
+                        ink-600 for decoration. */}
+                    <span
+                        title={
+                            'A portfolio demo. The plant, the jobs, and every number are generated.\n' +
+                            `Build ${BUILD_SHA}, ${BUILD_TIME} UTC.`
+                        }
+                        className="sign shrink-0 border border-shell-600 px-1.5 py-0.5 text-[0.58rem] leading-none text-ink-500"
+                    >
+                        Demo<span className="hidden sm:inline"> · synthetic data</span>
+                        {/* The commit on screen. Kept at every width on purpose:
+                            it is worth less than nothing if it disappears exactly
+                            when someone is reviewing on a narrow window. */}
+                        <span className="ml-1 font-mono normal-case tracking-normal">{BUILD_SHA}</span>
                     </span>
-                )}
-                <nav className="ml-auto flex flex-wrap items-baseline justify-end gap-x-4 gap-y-1">
+                    {meta && (
+                        <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 sm:inline">
+                            {meta}
+                        </span>
+                    )}
+                </div>
+                {/* Never wraps. A second nav line would move the red rule down
+                    on narrow screens, which is the same bug in another costume,
+                    so the nav scrolls sideways instead — bar hidden, because a
+                    10px scrollbar inside a 48px header is not affordable.
+                    `ml-auto` right-aligns it while there is room; there is
+                    deliberately no `justify-end`, which would overflow the
+                    first items off the left edge where nothing can scroll
+                    back to them. */}
+                <nav className="scroll-hidden ml-auto flex min-w-0 flex-nowrap items-center gap-x-4 overflow-x-auto whitespace-nowrap">
                     {NAV.map((item) => {
                         const active = pathname === item.href;
                         return active ? (
                             <span
                                 key={item.href}
                                 aria-current="page"
-                                className="sign text-[0.64rem] text-brand-300"
+                                className="sign shrink-0 text-[0.64rem] text-brand-300"
                             >
                                 {item.label}
                             </span>
@@ -133,7 +158,7 @@ export function AppHeader({
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="sign text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300"
+                                className="sign shrink-0 text-[0.64rem] text-ink-500 transition-colors hover:text-brand-300"
                             >
                                 {item.label}
                             </Link>
@@ -141,14 +166,50 @@ export function AppHeader({
                     })}
                 </nav>
             </div>
-            {children && <div className={`${SHELL} pb-3`}>{children}</div>}
         </header>
     );
 }
 
-/** The standard content column. Every page's <main> is this. */
-export function Page({ children }: { children: React.ReactNode }) {
-    return <main className={`${SHELL} flex-1 py-6`}>{children}</main>;
+/**
+ * The frame. Every route renders exactly this and nothing outside it.
+ *
+ * Header, container, and vertical rhythm all arrive from here, so a page has no
+ * opportunity to disagree about any of them: it supplies content, and at most a
+ * `meta` string and a sticky footer. Before this, five pages each assembled
+ * their own `<div>` + `<AppHeader>` + `<main>`, and the chat assembled a
+ * different one — which is precisely how the header height, the rule position,
+ * the body width, and the top padding came to differ per route.
+ */
+export function AppFrame({
+    meta,
+    page,
+    footer,
+    children,
+}: {
+    /** Small monospace note beside the title — dataset date, week, row count. */
+    meta?: string;
+    /** Only for surfaces that are not in NAV; in practice, the 404. */
+    page?: string;
+    /**
+     * Pinned to the bottom of the viewport, inside the shared container — the
+     * chat composer, and nothing else so far.
+     */
+    footer?: React.ReactNode;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="flex min-h-full flex-1 flex-col">
+            <AppHeader meta={meta} page={page} />
+
+            <main className={`${SHELL} flex-1 py-[var(--layout-pad-y)]`}>{children}</main>
+
+            {footer && (
+                <div className="sticky bottom-0 rule-t bg-shell-900/90 backdrop-blur">
+                    <div className={`${SHELL} py-3`}>{footer}</div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 /**

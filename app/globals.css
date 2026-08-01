@@ -69,6 +69,29 @@
     --color-danger: #f2554a;      /* 5.7:1 — type and icons */
     --color-danger-fill: #d9382c; /* badges and bars; white on it is 4.6:1 */
 
+    /*
+     * Layout. Three numbers, and every route is built from all three — the
+     * frame is a token, not a decision each page gets to make again.
+     *
+     * These exist because the pages drifted: the chat wrapped itself in an
+     * 80ch column with its own 3rem of vertical padding while the dashboard,
+     * schedule, data, and tools pages ran full width at 1.5rem, and the chat's
+     * source bus sat *inside* the header and pushed the red rule 59px below
+     * where it lands everywhere else. Structural elements now land on the same
+     * pixel on every route because there is one place to change them.
+     *
+     * --layout-header-h is what pins the red rule (.rule-brand, the header's
+     * bottom border) to a fixed Y. The header row is that height exactly, so
+     * nothing rendered inside it can move the rule. Header content that would
+     * not fit belongs in the page body, below the rule.
+     *
+     * Prose is capped separately at 68ch (.answer, and PROSE in shell.tsx) —
+     * a typographic measure INSIDE the shared container, never a second frame.
+     */
+    --layout-max: 90rem;       /* container max width — 1440px */
+    --layout-header-h: 3rem;   /* header row — 48px, so the rule lands at 49 */
+    --layout-pad-y: 1.5rem;    /* main top/bottom padding — 24px */
+
     --font-display: var(--font-barlow), ui-sans-serif, sans-serif;
     --font-sans: var(--font-plex-sans), ui-sans-serif, sans-serif;
     --font-mono: var(--font-plex-mono), ui-monospace, monospace;
@@ -132,6 +155,14 @@ body {
     scrollbar-width: thin;
     scrollbar-color: var(--color-shell-600) transparent;
 }
+/*
+ * A scroller with no visible bar. Used only by the header nav, which scrolls
+ * sideways on a narrow screen: the header is a fixed height, and a 10px
+ * horizontal scrollbar inside 48px would eat a fifth of it.
+ */
+.scroll-hidden { scrollbar-width: none; }
+.scroll-hidden::-webkit-scrollbar { display: none; }
+
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {

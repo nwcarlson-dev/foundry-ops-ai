@@ -23,7 +23,7 @@ import { getDashboard } from '@/lib/anomalies';
 import { readDashboardNarratives } from '@/lib/narrative/dashboard';
 import { ScrapTrend, WorkCenterLoad, Reconciliation } from './charts';
 import { FindingsList } from './findings';
-import { AppHeader, Page, Panel, ErrorBox, StatTiles, PageNote } from '../shell';
+import { AppFrame, Panel, ErrorBox, StatTiles, PageNote } from '../shell';
 
 export const revalidate = 3600;
 
@@ -33,14 +33,11 @@ export default async function DashboardPage() {
         data = await getDashboard();
     } catch (err) {
         return (
-            <div className="flex min-h-full flex-1 flex-col">
-                <AppHeader meta="unavailable" />
-                <Page>
-                    <ErrorBox>
-                        {err instanceof Error ? err.message : 'Dashboard query failed.'}
-                    </ErrorBox>
-                </Page>
-            </div>
+            <AppFrame meta="unavailable">
+                <ErrorBox>
+                    {err instanceof Error ? err.message : 'Dashboard query failed.'}
+                </ErrorBox>
+            </AppFrame>
         );
     }
 
@@ -50,82 +47,78 @@ export default async function DashboardPage() {
     for (const f of data.findings) f.narrative = narratives?.[f.id];
 
     return (
-        <div className="flex min-h-full flex-1 flex-col">
-            <AppHeader meta={`as of ${data.as_of}`} />
+        <AppFrame meta={`as of ${data.as_of}`}>
+            <div className="space-y-5">
+                {/* Headline counts. A stat tile, not a chart — three numbers
+                    do not need axes. */}
+                <StatTiles
+                    items={[
+                        { label: 'Open jobs', value: data.counts.open_jobs },
+                        { label: 'Findings', value: data.findings.length },
+                        { label: 'Unreconciled', value: data.counts.unmatched },
+                    ]}
+                />
 
-            <Page>
-                <div className="space-y-5">
-                    {/* Headline counts. A stat tile, not a chart — three numbers
-                        do not need axes. */}
-                    <StatTiles
-                        items={[
-                            { label: 'Open jobs', value: data.counts.open_jobs },
-                            { label: 'Findings', value: data.findings.length },
-                            { label: 'Unreconciled', value: data.counts.unmatched },
-                        ]}
+                <Panel
+                    title="What changed"
+                    meta={`${data.findings.length} findings · deterministic detection`}
+                >
+                    <FindingsList
+                        findings={data.findings}
+                        narrativePending={narratives === null}
                     />
+                </Panel>
 
-                    <Panel
-                        title="What changed"
-                        meta={`${data.findings.length} findings · deterministic detection`}
-                    >
-                        <FindingsList
-                            findings={data.findings}
-                            narrativePending={narratives === null}
-                        />
+                <div className="grid gap-5 lg:grid-cols-2">
+                    <Panel title="Scrap by reason" meta="weekly, 16 weeks">
+                        <ScrapTrend points={data.scrap_series} reasons={data.scrap_reasons} />
                     </Panel>
 
-                    <div className="grid gap-5 lg:grid-cols-2">
-                        <Panel title="Scrap by reason" meta="weekly, 16 weeks">
-                            <ScrapTrend points={data.scrap_series} reasons={data.scrap_reasons} />
-                        </Panel>
+                    <Panel title="Work centre load" meta="open jobs vs effective capacity">
+                        <WorkCenterLoad rows={data.load} />
+                    </Panel>
 
-                        <Panel title="Work centre load" meta="open jobs vs effective capacity">
-                            <WorkCenterLoad rows={data.load} />
-                        </Panel>
+                    <Panel title="Reconciliation health" meta="match rate per bridge">
+                        <Reconciliation rows={data.reconciliation} />
+                    </Panel>
 
-                        <Panel title="Reconciliation health" meta="match rate per bridge">
-                            <Reconciliation rows={data.reconciliation} />
-                        </Panel>
-
-                        <Panel title="Next due" meta={`${data.at_risk.length} open jobs`}>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-[0.78rem] tabular-nums">
-                                    <thead>
-                                        <tr className="sign text-[0.6rem] text-ink-600">
-                                            <th className="rule-b pb-1 pr-3 text-left font-normal">Job</th>
-                                            <th className="rule-b pb-1 pr-3 text-left font-normal">Part</th>
-                                            <th className="rule-b pb-1 pr-3 text-left font-normal">Due</th>
-                                            <th className="rule-b pb-1 text-right font-normal">Days</th>
+                    <Panel title="Next due" meta={`${data.at_risk.length} open jobs`}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-[0.78rem] tabular-nums">
+                                <thead>
+                                    <tr className="sign text-[0.6rem] text-ink-600">
+                                        <th className="rule-b pb-1 pr-3 text-left font-normal">Job</th>
+                                        <th className="rule-b pb-1 pr-3 text-left font-normal">Part</th>
+                                        <th className="rule-b pb-1 pr-3 text-left font-normal">Due</th>
+                                        <th className="rule-b pb-1 text-right font-normal">Days</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.at_risk.slice(0, 8).map((j) => (
+                                        <tr key={j.job_num} className="border-b border-shell-800">
+                                            <td className="py-1.5 pr-3 font-mono text-ink-300">{j.job_num}</td>
+                                            <td className="py-1.5 pr-3 font-mono text-ink-500">{j.part_num}</td>
+                                            <td className="py-1.5 pr-3 font-mono text-ink-600">{j.req_due_date}</td>
+                                            <td
+                                                className="py-1.5 text-right font-mono"
+                                                style={{ color: j.days_to_due <= 5 ? 'var(--color-warn)' : 'var(--color-ink-500)' }}
+                                            >
+                                                {j.days_to_due}
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.at_risk.slice(0, 8).map((j) => (
-                                            <tr key={j.job_num} className="border-b border-shell-800">
-                                                <td className="py-1.5 pr-3 font-mono text-ink-300">{j.job_num}</td>
-                                                <td className="py-1.5 pr-3 font-mono text-ink-500">{j.part_num}</td>
-                                                <td className="py-1.5 pr-3 font-mono text-ink-600">{j.req_due_date}</td>
-                                                <td
-                                                    className="py-1.5 text-right font-mono"
-                                                    style={{ color: j.days_to_due <= 5 ? 'var(--color-warn)' : 'var(--color-ink-500)' }}
-                                                >
-                                                    {j.days_to_due}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Panel>
-                    </div>
-
-                    <PageNote>
-                        Detection is deterministic SQL — z-scores against a rolling baseline, rate
-                        comparisons, and persistence tests. The model writes only the italic line
-                        under each finding, over numbers it did not produce.
-                    </PageNote>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Panel>
                 </div>
-            </Page>
-        </div>
+
+                <PageNote>
+                    Detection is deterministic SQL — z-scores against a rolling baseline, rate
+                    comparisons, and persistence tests. The model writes only the italic line
+                    under each finding, over numbers it did not produce.
+                </PageNote>
+            </div>
+        </AppFrame>
     );
 }

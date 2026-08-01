@@ -187,3 +187,49 @@ block plus the `body` glow, `::selection`, and the `.answer code` rule. Nothing
 in [`app/chat.tsx`](../app/chat.tsx) or the components needs to change if the
 token names are kept and only their values move; the new `brand-*` tokens are
 additive.
+
+---
+
+# Layout: one frame, five routes
+
+> **Status: applied.** Enforced by [`app/shell.tsx`](../app/shell.tsx) and three
+> tokens in [`app/globals.css`](../app/globals.css).
+
+Consistency here means every route is composed from the same primitives, so
+structural elements land on the same pixel — not that the pages look roughly
+alike. Before this, they did not: the copilot rendered the source bus inside the
+`<header>`, which pushed the red rule to y=106 while the other four routes had
+it at y=47, and it wrapped its body in an 80ch column with 48px of vertical
+padding while everything else ran full width at 24px.
+
+## The tokens
+
+| Token | Value | What it fixes |
+| --- | --- | --- |
+| `--layout-max` | `90rem` (1440px) | The one container width. |
+| `--layout-header-h` | `3rem` (48px) | The header row, so the red rule lands at y=49 on every route. |
+| `--layout-pad-y` | `1.5rem` (24px) | Top and bottom padding of `<main>`. |
+
+## The rules
+
+1. **A page renders `<AppFrame>` and nothing outside it.** The frame owns the
+   header, the container, the vertical rhythm, and the sticky footer slot. A
+   page supplies content, an optional `meta` string, and nothing else.
+2. **`SHELL` is not exported.** A page that cannot name the container cannot
+   override it. No page sets `max-w-*`, page padding, or its own `<header>`.
+3. **The header has no slot.** `AppHeader` is not exported and takes no
+   children. Its row is exactly `--layout-header-h` tall and nothing inside it
+   can wrap or grow — the nav scrolls sideways rather than taking a second line.
+   Page-specific header-adjacent content (the source bus) goes in the page body,
+   below the rule.
+4. **Prose caps at 68ch, inside the container.** `PROSE` and `.answer` are a
+   typographic measure, not a frame: no `mx-auto`, no `w-full`, so they can cap
+   a line length but never narrow or centre the page.
+
+## Verified
+
+Measured in a real browser at 1440px, 1024px, and 390px, across `/`,
+`/dashboard`, `/schedule`, `/data`, `/tools`, and the 404: header height 49px
+(48px row + the 1px rule), rule at y=49, `<main>` frame equal to the viewport up
+to the 1440px cap, and 24px of top padding — identical on every route at every
+width.
