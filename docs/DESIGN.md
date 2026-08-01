@@ -225,6 +225,15 @@ padding while everything else ran full width at 24px.
 4. **Prose caps at 68ch, inside the container.** `PROSE` and `.answer` are a
    typographic measure, not a frame: no `mx-auto`, no `w-full`, so they can cap
    a line length but never narrow or centre the page.
+5. **The header degrades by hiding, never by growing.** Below `md` (768px) the
+   five nav items collapse into a menu; the dataset note and the badge's
+   "· synthetic data" are held back to `lg`. The open menu is positioned out of
+   flow, so it cannot move the rule either. The header carries `z-50` because
+   `backdrop-blur` makes it its own stacking context — without it the menu
+   renders under the page's animated cards.
+6. **The build stamp is checkable, not chrome.** A commit hash means nothing to
+   a visitor, so it lives in the `build` meta tag and the demo badge's tooltip
+   rather than on screen: `curl -s <url> | grep 'name="build"'`.
 
 ## Verified
 

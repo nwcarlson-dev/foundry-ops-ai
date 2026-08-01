@@ -10,6 +10,7 @@
  *
  * The rule: pages own their content, never their frame.
  */
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BUILD_SHA, BUILD_TIME } from '@/lib/build';
@@ -67,8 +68,9 @@ const NAV = [
  * to one page now goes in that page's body, below the rule.
  *
  * The row is `--layout-header-h` tall and nothing inside it can grow: every
- * child is `shrink-0`, and the nav scrolls sideways rather than wrapping onto a
- * second line. So the rule lands on the same Y at every width, on every page.
+ * child is `shrink-0`, and below `md` the nav collapses into a menu rather than
+ * wrapping onto a second line. So the rule lands on the same Y at every width,
+ * on every page — the open menu is positioned out of flow for the same reason.
  */
 function AppHeader({
     meta,
@@ -86,9 +88,34 @@ function AppHeader({
 }) {
     const pathname = usePathname();
     const page = pageOverride ?? NAV.find((item) => item.href === pathname)?.label;
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    // Arriving somewhere new must not leave the menu standing open over it.
+    // Adjusted during render rather than in an effect: an effect would paint
+    // the new page with the old menu on top of it first, and setting state in
+    // an effect body is what react-hooks/set-state-in-effect exists to stop.
+    // Tracking the path in state also catches back/forward, which a click
+    // handler on the links would miss.
+    const [menuPath, setMenuPath] = useState(pathname);
+    if (menuPath !== pathname) {
+        setMenuPath(pathname);
+        setMenuOpen(false);
+    }
+
+    // Escape closes it, because a panel that covers the page needs a way out
+    // that is not "find the button again".
+    useEffect(() => {
+        if (!menuOpen) return;
+        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [menuOpen]);
 
     return (
-        <header className="rule-brand bg-shell-900/80 backdrop-blur">
+        // z-50 is load-bearing: `backdrop-blur` makes the header its own
+        // stacking context, so without it the menu's own z-index is trapped
+        // inside a layer that the page's animated cards paint straight over.
+        <header className="relative z-50 rule-brand bg-shell-900/80 backdrop-blur">
             <div
                 className={`${SHELL} flex h-[var(--layout-header-h)] items-center gap-3`}
             >
@@ -115,7 +142,13 @@ function AppHeader({
                         the dashboard or the schedule never sees it at all.
                         Deliberately ink-500 rather than ink-600 — this carries a
                         label, and the token comments in globals.css reserve
-                        ink-600 for decoration. */}
+                        ink-600 for decoration.
+
+                        The commit used to be printed here. It is a build
+                        artefact and it means nothing to a visitor, so it now
+                        lives in this tooltip and in the `build` meta tag — still
+                        one glance from anyone checking whether they are looking
+                        at a stale cache, and invisible to everyone else. */}
                     <span
                         title={
                             'A portfolio demo. The plant, the jobs, and every number are generated.\n' +
@@ -123,27 +156,26 @@ function AppHeader({
                         }
                         className="sign shrink-0 border border-shell-600 px-1.5 py-0.5 text-[0.58rem] leading-none text-ink-500"
                     >
-                        Demo<span className="hidden sm:inline"> · synthetic data</span>
-                        {/* The commit on screen. Kept at every width on purpose:
-                            it is worth less than nothing if it disappears exactly
-                            when someone is reviewing on a narrow window. */}
-                        <span className="ml-1 font-mono normal-case tracking-normal">{BUILD_SHA}</span>
+                        Demo<span className="hidden lg:inline"> · synthetic data</span>
                     </span>
+                    {/* Held back to lg: between md and lg the inline nav needs
+                        the room more than a dataset date does. */}
                     {meta && (
-                        <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 sm:inline">
+                        <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 lg:inline">
                             {meta}
                         </span>
                     )}
                 </div>
-                {/* Never wraps. A second nav line would move the red rule down
-                    on narrow screens, which is the same bug in another costume,
-                    so the nav scrolls sideways instead — bar hidden, because a
-                    10px scrollbar inside a 48px header is not affordable.
-                    `ml-auto` right-aligns it while there is room; there is
-                    deliberately no `justify-end`, which would overflow the
-                    first items off the left edge where nothing can scroll
-                    back to them. */}
-                <nav className="scroll-hidden ml-auto flex min-w-0 flex-nowrap items-center gap-x-4 overflow-x-auto whitespace-nowrap">
+                {/* Five destinations do not fit beside the title on a phone —
+                    they were running off the right edge — so below `md` they
+                    collapse into the menu instead. Above it, the full list,
+                    which is worth more than a button on a screen with room for
+                    it. Never wraps at any width: a second nav line would move
+                    the red rule down, which is the old bug in another costume.
+                    `ml-auto` right-aligns it; there is deliberately no
+                    `justify-end`, which strands the first items off the left
+                    edge where nothing can scroll back to them. */}
+                <nav className="scroll-hidden ml-auto hidden min-w-0 flex-nowrap items-center gap-x-4 overflow-x-auto whitespace-nowrap md:flex">
                     {NAV.map((item) => {
                         const active = pathname === item.href;
                         return active ? (
@@ -165,7 +197,73 @@ function AppHeader({
                         );
                     })}
                 </nav>
+
+                <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-expanded={menuOpen}
+                    aria-controls="app-menu"
+                    aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                    className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center border border-shell-600 text-ink-300 transition-colors hover:border-brand-500 hover:text-brand-300 md:hidden"
+                >
+                    <svg
+                        aria-hidden
+                        viewBox="0 0 16 16"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.25"
+                        strokeLinecap="square"
+                    >
+                        {menuOpen ? (
+                            <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+                        ) : (
+                            <path d="M2 4.5h12M2 8h12M2 11.5h12" />
+                        )}
+                    </svg>
+                </button>
             </div>
+
+            {/* Out of flow on purpose: an open menu must not push the red rule
+                down, which is the whole invariant this header exists to hold.
+                It hangs below the rule instead, at the same gutter as the page
+                under it. */}
+            {menuOpen && (
+                <div
+                    id="app-menu"
+                    className="absolute inset-x-0 top-full z-40 rule-b bg-shell-900 shadow-lg shadow-black/40 md:hidden"
+                >
+                    <nav className={`${SHELL} flex flex-col py-1`}>
+                        {NAV.map((item) => {
+                            const active = pathname === item.href;
+                            return active ? (
+                                <span
+                                    key={item.href}
+                                    aria-current="page"
+                                    className="sign border-l-2 border-brand-500 py-2.5 pl-3 text-[0.7rem] text-brand-300"
+                                >
+                                    {item.label}
+                                </span>
+                            ) : (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="sign border-l-2 border-transparent py-2.5 pl-3 text-[0.7rem] text-ink-300 transition-colors hover:border-shell-600 hover:text-brand-300"
+                                >
+                                    {item.label}
+                                </Link>
+                            );
+                        })}
+                        {/* The one place the dataset note is readable on a
+                            phone, where it is hidden from the header row. */}
+                        {meta && (
+                            <span className="rule-t mt-1 py-2 pl-3 font-mono text-[0.66rem] text-ink-600">
+                                {meta}
+                            </span>
+                        )}
+                    </nav>
+                </div>
+            )}
         </header>
     );
 }
