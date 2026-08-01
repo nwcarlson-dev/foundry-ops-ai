@@ -226,8 +226,9 @@ padding while everything else ran full width at 24px.
    typographic measure, not a frame: no `mx-auto`, no `w-full`, so they can cap
    a line length but never narrow or centre the page.
 5. **The header degrades by hiding, never by growing.** Below `md` (768px) the
-   five nav items collapse into a menu; the dataset note and the badge's
-   "· synthetic data" are held back to `lg`. The open menu is positioned out of
+   five nav items collapse into a menu. The demo badge reads "Demo · synthetic
+   data" at every width — what the app is stays on screen at every size, and it
+   is not the nav's to trade away for room. The open menu is positioned out of
    flow, so it cannot move the rule either. The header carries `z-50` because
    `backdrop-blur` makes it its own stacking context — without it the menu
    renders under the page's animated cards.

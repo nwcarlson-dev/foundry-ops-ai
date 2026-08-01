@@ -122,17 +122,25 @@ function AppHeader({
                 {/* Title group. Baseline-aligned within itself, centred as a
                     group in the fixed row — the internal alignment survives,
                     the row height does not depend on it. */}
-                <div className="flex min-w-0 shrink-0 items-baseline gap-3">
+                <div className="flex min-w-0 items-baseline gap-3">
                     <span className="h-2 w-2 shrink-0 self-center rounded-full bg-brand-500" />
                     {/* The product name stays constant and quiet; the page name
                         is the bright part. Same two-part title on every surface,
-                        so where you are is always read in the same place. */}
-                    <h1 className="sign flex shrink-0 items-baseline gap-1.5 text-[0.92rem]">
-                        <span className="text-ink-500">Foundry Ops</span>
+                        so where you are is always read in the same place.
+
+                        This is the one thing in the row allowed to give: below
+                        about 430px the longest page names ("Plant status",
+                        "Source data") would otherwise push the menu button off
+                        the right edge. The title truncates instead, because it
+                        is the only element here that is repeated elsewhere —
+                        the current page is named again, in full, in the open
+                        menu. The badge and the button never shrink. */}
+                    <h1 className="sign flex min-w-0 items-baseline gap-1.5 text-[0.92rem]">
+                        <span className="shrink-0 text-ink-500">Foundry Ops</span>
                         {page && (
                             <>
-                                <span className="text-ink-600">·</span>
-                                <span className="text-ink-100">{page}</span>
+                                <span className="shrink-0 text-ink-600">·</span>
+                                <span className="truncate text-ink-100">{page}</span>
                             </>
                         )}
                     </h1>
@@ -156,12 +164,10 @@ function AppHeader({
                         }
                         className="sign shrink-0 border border-shell-600 px-1.5 py-0.5 text-[0.58rem] leading-none text-ink-500"
                     >
-                        Demo<span className="hidden lg:inline"> · synthetic data</span>
+                        Demo · synthetic data
                     </span>
-                    {/* Held back to lg: between md and lg the inline nav needs
-                        the room more than a dataset date does. */}
                     {meta && (
-                        <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 lg:inline">
+                        <span className="hidden truncate font-mono text-[0.68rem] text-ink-600 sm:inline">
                             {meta}
                         </span>
                     )}
